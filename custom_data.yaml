@@ -1,0 +1,9 @@
+train: /home/ngocluong/code/projects/MilitaryAndCivilianVehicles/Military and Civilian Vehicles Classification/train_data/images/train/  # train images (relative to 'path') 128 images
+val: /home/ngocluong/code/projects/MilitaryAndCivilianVehicles/Military and Civilian Vehicles Classification/train_data/images/val/ # val images (relative to 'path') 128 images
+
+
+# Classes
+nc:  6 # number of classes
+names: ['military truck', 'civilian car', 'military tank', 'civilian aircraft','military aircraft', 'military helicopter']  # class names
+
+
