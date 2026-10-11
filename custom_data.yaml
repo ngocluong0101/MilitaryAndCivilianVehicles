@@ -1,5 +1,6 @@
-train: /home/ngocluong/code/projects/MilitaryAndCivilianVehicles/Military and Civilian Vehicles Classification/train_data/images/train/  # train images (relative to 'path') 128 images
-val: /home/ngocluong/code/projects/MilitaryAndCivilianVehicles/Military and Civilian Vehicles Classification/train_data/images/val/ # val images (relative to 'path') 128 images
+path: Military and Civilian Vehicles Classification/train_data  # dataset root dir (relative to this file)
+train: images/train  # train images (relative to 'path') 6206 images
+val: images/val  # val images (relative to 'path') 496 images
 
 
 # Classes
