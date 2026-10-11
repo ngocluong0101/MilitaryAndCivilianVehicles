@@ -44,3 +44,6 @@ train_data/
 
 # Backup of nested git metadata (created by repo prep)
 yolov5_git_backup.tar.gz
+
+# Personal interview prep notes (private, not for the repo)
+interview.md
