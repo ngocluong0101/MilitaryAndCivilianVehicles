@@ -73,6 +73,40 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db
 chối nếu thiếu `--final`, và chỉ ghi vào `reports/test_results.json` một lần (không ghi đè trừ khi
 `--allow-rerun`).
 
+## Export, benchmark, API và demo
+
+Sau khi chọn model bằng val (xem ROADMAP):
+
+```bash
+# Export ONNX + TensorRT FP16/INT8 (INT8 hiệu chuẩn bằng 500 ảnh TRAIN) -> exports/<tag>/
+python -m vehicledet export --weights runs/detect/<tên>/weights/best.pt --tag <tên>
+
+# Benchmark tốc độ/VRAM/mAP -> reports/benchmark.csv (định dạng không chạy được ghi "chưa đo")
+python -m vehicledet benchmark --model-dir exports/<tên> --map-part val
+# TensorRT và onnxruntime-gpu cần cài thêm: docs/TENSORRT_SETUP.md
+
+# API FastAPI (ONNX Runtime, chạy được cả CPU): http://127.0.0.1:8000/docs
+python -m vehicledet serve --model exports/<tên>/best.onnx
+curl -F "file=@anh.jpg" "http://127.0.0.1:8000/predict?conf=0.25"
+
+# Demo Gradio dùng chung lõi inference với API
+python -m vehicledet demo --model exports/<tên>/best.onnx
+```
+
+API: `POST /predict` (ảnh, tham số `conf`, `iou`; giới hạn `MAX_UPLOAD_MB`, mặc định 10 MB; lỗi: 400 ảnh
+không hợp lệ, 413 quá lớn, 422 tham số sai, 503 model chưa nạp) và `GET /health`.
+
+Docker (CPU, ONNX Runtime; image ~760 MB, không chứa torch/ultralytics):
+
+```bash
+mkdir -p models && cp exports/<tên>/best.onnx models/best.onnx
+docker compose up --build api                  # API  -> http://localhost:8000/docs
+docker compose --profile demo up --build demo  # demo -> http://localhost:7860
+```
+
+Bản GPU (`docker/Dockerfile.gpu`, profile `gpu`) mới được viết, **chưa kiểm thử**. Hướng dẫn đưa demo
+CPU lên Hugging Face Spaces: [docs/HF_SPACES.md](docs/HF_SPACES.md).
+
 ## Chất lượng dữ liệu
 
 Tóm tắt (chi tiết: [DATASET.md](DATASET.md)): **71,7% ảnh nằm trong nhóm ảnh trùng/gần trùng** và

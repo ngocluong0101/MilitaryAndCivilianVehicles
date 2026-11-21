@@ -7,3 +7,11 @@ numpy==2.5.5
 Pillow==13.0.0
 ImageHash==4.3.2
 mlflow==3.18.0
+# Export & phục vụ model
+onnx==1.23.2
+onnxslim==0.1.99
+onnxruntime==1.32.0
+fastapi==0.165.0
+uvicorn==0.54.0
+python-multipart==0.0.34
+gradio==6.32.0

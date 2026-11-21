@@ -1,3 +1,4 @@
 -r requirements.txt
 pytest==9.2.0
 ruff==0.17.6
+httpx==0.28.1   # cho fastapi TestClient

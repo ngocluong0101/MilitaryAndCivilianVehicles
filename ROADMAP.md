@@ -1,6 +1,6 @@
 # ROADMAP – Nâng cấp Military & Civilian Vehicle Detection
 
-Trạng thái: Phase 3 / 7 (đã chuẩn bị code, chưa train) · Cập nhật: 2026-11-22
+Trạng thái: code Phase 3, 5, 6 đã viết xong; chờ chạy train (Phase 3) · Cập nhật: 2026-11-22
 
 ## Tiến độ
 | Phase | Nội dung | Trạng thái |
@@ -10,8 +10,8 @@ Trạng thái: Phase 3 / 7 (đã chuẩn bị code, chưa train) · Cập nhật
 | 2 | Kiểm tra dữ liệu & chia lại tập | ✅ |
 | 3 | Train & thí nghiệm | 🟨 code xong, chưa chạy train |
 | 4 | Phân tích lỗi | ⬜ |
-| 5 | Export & benchmark RTX 4060 | ⬜ |
-| 6 | API, Docker & demo Gradio | ⬜ |
+| 5 | Export & benchmark RTX 4060 | 🟨 code xong, chưa đo |
+| 6 | API, Docker & demo Gradio | 🟨 code xong, chưa thử với model đã train |
 | 7 | Hoàn thiện & bullet CV | ⬜ |
 
 ## Hiện trạng (khảo sát Phase 0)
@@ -140,18 +140,20 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - [ ] Dừng và báo cáo
 
 ### Phase 5 – Export & benchmark trên RTX 4060
-- [ ] Export ONNX, TensorRT FP16, TensorRT INT8 (calib ~500 ảnh train)
-- [ ] `benchmark.py` (latency p50/p95, throughput b1/4/8/16, VRAM, mAP50-95 test)
-- [ ] Warm-up, lặp nhiều lần, ghi phiên bản driver/CUDA/TensorRT → `reports/benchmark.csv`
-- [ ] Hướng dẫn cài + “chưa đo” cho bước không chạy được
-- [ ] Dừng và báo cáo
+- [x] Code export ONNX / TensorRT FP16 / TensorRT INT8 (`python -m vehicledet export`); INT8 hiệu chuẩn bằng 500 ảnh **train** (seed 0, có test chứng minh không lẫn val/test)
+- [x] `benchmark.py`: PyTorch FP32/FP16, ONNX Runtime, TensorRT FP16/INT8 – latency p50/p95 batch 1, throughput batch 1/4/8/16, VRAM của riêng tiến trình (nvidia-smi), mAP50-95 (val; test cần `--final`)
+- [x] Warm-up 20 lần, 200 lần lặp; ghi phiên bản driver/CUDA/TensorRT/ONNX Runtime và kích thước input vào `reports/benchmark.json`
+- [x] Hướng dẫn cài TensorRT/onnxruntime-gpu (`docs/TENSORRT_SETUP.md`); định dạng không chạy được ghi "chưa đo" kèm lý do
+- [ ] **Chạy** export + benchmark với model đã chọn – *chưa chạy: chưa có model train xong; TensorRT và onnxruntime-gpu chưa cài*
+- [ ] Dừng và báo cáo (kèm bảng tốc độ vs độ chính xác)
 
 ### Phase 6 – Phục vụ model & demo
-- [ ] FastAPI (`/predict`, `/health`, giới hạn file, xử lý lỗi; backend ONNX Runtime/TensorRT)
-- [ ] Dockerfile (CPU + GPU tuỳ chọn) + `docker-compose.yml`
-- [ ] Demo Gradio dùng chung code inference
-- [ ] (Tuỳ chọn) Hướng dẫn Hugging Face Spaces
-- [ ] Test API bằng `TestClient` + model stub
+- [x] FastAPI: `POST /predict` (ngưỡng `conf`/`iou`, giới hạn kích thước, lỗi 400/413/422/500/503 rõ ràng), `GET /health`; backend ONNX Runtime (mặc định, CPU) hoặc TensorRT
+- [x] Dockerfile CPU (đã build + chạy thử, 758 MB) + Dockerfile GPU (**chưa kiểm thử**) + `docker-compose.yml`
+- [x] Demo Gradio gọi lại cùng `Detector.predict` với API (không viết hai lần)
+- [x] (Tuỳ chọn) Hướng dẫn Hugging Face Spaces (`docs/HF_SPACES.md`, chưa triển khai thật)
+- [x] Test API bằng `TestClient` với detector stub + model ONNX giả dựng bằng `onnx.helper` (không cần weights thật)
+- [ ] Chạy thử với model đã train của project (hiện mới thử với yolo11n COCO để kiểm tra cơ chế) và đo `scripts/check_serve_parity.py`
 - [ ] Dừng và báo cáo
 
 ### Phase 7 – Hoàn thiện & tổng kết
@@ -188,10 +190,14 @@ Sinh tự động từ `reports/experiments/*/` bằng `python scripts/summarize
 | – | chưa chạy | | | | | | | | |
 <!-- EXPERIMENTS:END -->
 
-### Benchmark (RTX 4060 Laptop 8 GB, input chưa xác định)
-| Định dạng | Precision | Latency p50 (ms) | p95 (ms) | Throughput b16 (img/s) | VRAM (MB) | mAP50-95 test |
-|---|---|---|---|---|---|---|
-| chưa đo | | | | | | |
+### Benchmark (RTX 4060 Laptop 8 GB, input 1×3×640×640 letterbox)
+Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadmap ROADMAP.md`. Latency = thời gian model (`speed['inference']` của Ultralytics) cho 1 ảnh, batch 1; throughput = ảnh/giây của cả lời gọi predict (gồm tiền/hậu xử lý). Định dạng không chạy được trên máy ghi "chưa đo" kèm lý do.
+
+<!-- BENCHMARK:START (sinh bởi `python -m vehicledet benchmark --roadmap`) -->
+| Định dạng | Precision | Latency p50 (ms) | p95 (ms) | Throughput b16 (img/s) | VRAM (MB) | mAP50-95 | Ghi chú |
+|---|---|---|---|---|---|---|---|
+| chưa đo | | | | | | | |
+<!-- BENCHMARK:END -->
 
 ## Quyết định & lý do
 - 2026-11-20: Giữ nguyên `yolov5/` và mọi file hiện có trong Phase 0 (chỉ thêm `ROADMAP.md`).
@@ -209,7 +215,13 @@ Sinh tự động từ `reports/experiments/*/` bằng `python scripts/summarize
 - 2026-11-22: Dùng Tracker MLflow riêng, gỡ callback MLflow tích hợp của Ultralytics (nó log cả weights và đặt tên experiment theo đường dẫn) – chỉ ở mức run, không đổi cấu hình toàn cục. `reports/experiments/*/run_info.json` dùng đường dẫn `<repo>/…` để không lộ đường dẫn máy.
 - 2026-11-22: Khoá tập test ngay trong code: `evaluate --part test` cần `--final`, chỉ ghi `reports/test_results.json` một lần.
 
+- 2026-11-22: Làm trước code Phase 5 và 6 (theo yêu cầu, vì chưa train được). Export/benchmark đi qua cùng đường `predict` của Ultralytics cho mọi định dạng (tiền/hậu xử lý giống nhau); API/demo dùng pipeline ONNX tự viết bằng numpy/Pillow để image CPU không cần torch. Ultralytics 8.4.216 đã thay `half`/`int8` bằng `quantize` (16/8).
+- 2026-11-22: Kiểm tra pipeline ONNX tự viết với yolo11n COCO (không phải model của project, chỉ để kiểm tra cơ chế): với bbox điểm ≥ 0,6 khớp Ultralytics IoU > 0,9 ở ≥ 95% (20–40 ảnh val; kiểm tra thủ công, không lưu trong `reports/`); phát hiện điểm thấp lệch nhiều hơn do tiền xử lý khác nhau (Pillow vs OpenCV resize). Chưa phải kết quả của model project; `scripts/check_serve_parity.py` sẽ đo lại với model thật.
+
 ## Vấn đề còn mở
+- `.venv` chưa có TensorRT và onnxruntime-gpu (cần cài tay, xem `docs/TENSORRT_SETUP.md`); tới lúc đó các dòng TensorRT/ONNX-GPU trong benchmark là "chưa đo".
+- `docker/Dockerfile.gpu` chưa build/chạy thử (cần NVIDIA Container Toolkit; Docker trên máy có runtime `nvidia`). Cần chọn base image/onnxruntime-gpu khớp CUDA.
+- Pipeline ONNX của API tiền xử lý hơi khác Ultralytics (Pillow vs OpenCV), điểm tin cậy có thể lệch ~0,04 ở phát hiện chắc chắn; cần đo ảnh hưởng tới mAP với model thật.
 - **Cần bạn chạy để hoàn tất việc xoá `myCV/` và `interview.md` khỏi GitHub:** `git push --force origin main` (lịch sử đã viết lại cục bộ; hash các commit từ `update` trở đi đã đổi, hiện tại `main` = `3e82533`). Bản sao lưu trước khi viết lại: `../MilitaryAndCivilianVehicles-pre-filter.bundle` (chứa cả CV và interview.md; xoá sau khi xác nhận ổn). GitHub vẫn có thể giữ commit cũ trong cache/fork/PR; nếu từng lộ thì coi như đã lộ.
 - Cập nhật 2026-11-21: đã xoá `interview.md` khỏi lịch sử (0 tham chiếu `interview`/`myCV` trong mọi commit); cây thư mục của HEAD không đổi.
 - Trang Mendeley ghi 6.642 ảnh dương / 130 ảnh âm / 11.528 đối tượng, trong khi đếm từ file thật là 6.705 / 67 / 10.718 bbox hợp lệ. Chưa rõ lý do (xem `DATASET.md`); project dùng số đếm từ file.
