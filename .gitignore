@@ -1,52 +1,45 @@
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
 
-# Environments
+# Môi trường
 .venv/
 venv/
 env/
-ENV/
+.env
 
-# IDEs
+# IDE / OS
 .vscode/
 .idea/
-
-# Pytest/cache
-.pytest_cache/
-
-# macOS
 .DS_Store
 
-# Logs and temp
+# Log, tạm
 *.log
 *.tmp
 *~
 
-# Dataset and generated data (do NOT commit large datasets or generated train artifacts)
-# If you want to include small examples, add them to an `assets/` folder and track them explicitly.
-Images/
-Labels/
-train_data/
+# Dataset (nằm ngoài git; đặt ở /data hoặc trỏ bằng DATA_ROOT) – neo về gốc repo
+/data/
+/train_data/
 
-# YOLO training runs and cache
+# Kết quả train, MLflow, weights, model đã export
 /runs/
-/yolov5/runs/
-
-# Model weights (ignore large checkpoints). Keep small example weights if desired.
+/mlruns/
+/weights/
 *.pt
+*.onnx
+*.engine
+*.cache
 
-# Videos and large media
+# Video lớn
 *.mp4
 *.avi
 *.mov
 
-# Backup of nested git metadata (created by repo prep)
-yolov5_git_backup.tar.gz
-
-# Personal interview prep notes (private, not for the repo)
+# Ghi chú cá nhân (riêng tư, không đưa vào repo)
 interview.md
-
-# Personal CV and interview prep (private, not for the repo)
 myCV/
+CLAUDE.md
