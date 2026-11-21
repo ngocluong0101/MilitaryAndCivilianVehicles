@@ -1,6 +1,6 @@
 # ROADMAP – Nâng cấp Military & Civilian Vehicle Detection
 
-Trạng thái: code Phase 3, 5, 6 đã viết xong; chờ chạy train (Phase 3) · Cập nhật: 2026-11-22
+Trạng thái: code/tài liệu Phase 3, 5, 6, 7 đã xong; **chờ chạy train** để có số liệu thật · Cập nhật: 2026-11-22
 
 ## Tiến độ
 | Phase | Nội dung | Trạng thái |
@@ -12,7 +12,7 @@ Trạng thái: code Phase 3, 5, 6 đã viết xong; chờ chạy train (Phase 3)
 | 4 | Phân tích lỗi | ⬜ |
 | 5 | Export & benchmark RTX 4060 | 🟨 code xong, chưa đo |
 | 6 | API, Docker & demo Gradio | 🟨 code xong, chưa thử với model đã train |
-| 7 | Hoàn thiện & bullet CV | ⬜ |
+| 7 | Hoàn thiện & bullet CV | 🟨 tài liệu/CI xong, chờ số liệu thật |
 
 ## Hiện trạng (khảo sát Phase 0)
 
@@ -157,11 +157,13 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - [ ] Dừng và báo cáo
 
 ### Phase 7 – Hoàn thiện & tổng kết
-- [ ] GitHub Actions: ruff + pytest
-- [ ] `MODEL_CARD.md`
-- [ ] README mới (Mermaid, bảng kết quả, benchmark, confusion matrix, GIF demo)
-- [ ] 3–4 bullet CV tiếng Anh (số liệu thật, ghi nguồn file)
-- [ ] Câu hỏi phỏng vấn + ý trả lời ngắn
+- [x] GitHub Actions (`.github/workflows/ci.yml`): ruff + pytest trên CPU, không cần dataset/GPU/torch (`requirements-ci.txt`). Đã kiểm chứng tương đương trong venv sạch (107 test pass, ruff sạch); **chưa chạy trên GitHub** nên chưa biết badge xanh hay chưa
+- [x] `MODEL_CARD.md` (khung): mục đích, dữ liệu, giới hạn, sử dụng có trách nhiệm, license; các mục kết quả/AP theo lớp/lớp hay nhầm ghi "chưa đo"/"chưa phân tích"
+- [x] README viết lại: bài toán, sơ đồ Mermaid, bảng dữ liệu (đã đo), cách tái lập từng bước; bảng test/benchmark/confusion matrix/GIF ghi "chưa đo/chưa có"
+- [x] Hướng dẫn quay GIF demo (`docs/DEMO_RECORDING.md`)
+- [x] Bullet CV (tiếng Anh) + câu hỏi phỏng vấn kèm đáp án gợi ý + thẻ học + bài luyện: `myCV/vehicle_detection_v2_study_guide.md` (file riêng tư, `myCV/` bị `.gitignore`); bullet 1–3 dùng số thật có nguồn, bullet 4 còn chỗ trống chờ số liệu
+- [ ] Sau khi train/benchmark: điền bảng test, benchmark, confusion matrix, GIF vào README/MODEL_CARD; điền bullet 4 và các chỗ `[Điền ...]` trong study guide
+- [ ] Push và xác nhận CI xanh
 - [ ] Dừng và báo cáo
 
 ## Số liệu
@@ -218,7 +220,12 @@ Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadm
 - 2026-11-22: Làm trước code Phase 5 và 6 (theo yêu cầu, vì chưa train được). Export/benchmark đi qua cùng đường `predict` của Ultralytics cho mọi định dạng (tiền/hậu xử lý giống nhau); API/demo dùng pipeline ONNX tự viết bằng numpy/Pillow để image CPU không cần torch. Ultralytics 8.4.216 đã thay `half`/`int8` bằng `quantize` (16/8).
 - 2026-11-22: Kiểm tra pipeline ONNX tự viết với yolo11n COCO (không phải model của project, chỉ để kiểm tra cơ chế): với bbox điểm ≥ 0,6 khớp Ultralytics IoU > 0,9 ở ≥ 95% (20–40 ảnh val; kiểm tra thủ công, không lưu trong `reports/`); phát hiện điểm thấp lệch nhiều hơn do tiền xử lý khác nhau (Pillow vs OpenCV resize). Chưa phải kết quả của model project; `scripts/check_serve_parity.py` sẽ đo lại với model thật.
 
+- 2026-11-22: CI dùng `requirements-ci.txt` riêng (không torch/ultralytics) vì mọi test chạy được không cần chúng (import nặng đều để trễ); giữ job nhanh và rẻ.
+- 2026-11-22: Bullet CV và câu hỏi phỏng vấn đặt trong `myCV/` (riêng tư) thay vì trong repo công khai; không đưa bullet CV vào README/ROADMAP.
+
 ## Vấn đề còn mở
+- **Toàn bộ kết quả mô hình vẫn "chưa đo"** (train, test, phân tích lỗi, benchmark GPU). README/MODEL_CARD/bullet CV số 4 đang chờ các số này.
+- Workflow CI chưa chạy trên GitHub; phiên bản action (`checkout@v4`, `setup-python@v5`) chưa kiểm chứng bằng một lần chạy thật.
 - `.venv` chưa có TensorRT và onnxruntime-gpu (cần cài tay, xem `docs/TENSORRT_SETUP.md`); tới lúc đó các dòng TensorRT/ONNX-GPU trong benchmark là "chưa đo".
 - `docker/Dockerfile.gpu` chưa build/chạy thử (cần NVIDIA Container Toolkit; Docker trên máy có runtime `nvidia`). Cần chọn base image/onnxruntime-gpu khớp CUDA.
 - Pipeline ONNX của API tiền xử lý hơi khác Ultralytics (Pillow vs OpenCV), điểm tin cậy có thể lệch ~0,04 ở phát hiện chắc chắn; cần đo ảnh hưởng tới mAP với model thật.

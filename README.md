@@ -1,11 +1,71 @@
 # Military & Civilian Vehicle Detection
 
+[![CI](https://github.com/ngocluong0101/MilitaryAndCivilianVehicles/actions/workflows/ci.yml/badge.svg)](https://github.com/ngocluong0101/MilitaryAndCivilianVehicles/actions/workflows/ci.yml)
+
 Phát hiện và phân loại 6 lớp phương tiện (`military truck`, `civilian car`, `military tank`,
 `civilian aircraft`, `military aircraft`, `military helicopter`) bằng
 [Ultralytics](https://github.com/ultralytics/ultralytics) YOLO.
 
-> **Trạng thái:** đang nâng cấp theo từng phase, xem [ROADMAP.md](ROADMAP.md). Chưa có kết quả đánh
-> giá được công bố; README đầy đủ (kết quả, benchmark, demo) sẽ viết ở Phase 7.
+Trọng tâm của project là **quy trình phát triển model bài bản**, không chỉ "chạy train": kiểm tra chất
+lượng dữ liệu → chia tập không rò rỉ → thí nghiệm có đối chứng → phân tích lỗi → export và đo tốc độ →
+phục vụ model. Tiến độ và số liệu chi tiết: [ROADMAP.md](ROADMAP.md).
+
+> **Trạng thái kết quả:** phần dữ liệu đã hoàn tất và có số liệu thật (bên dưới). Các lượt train, kết
+> quả trên tập test, phân tích lỗi và benchmark GPU **chưa chạy** nên các bảng tương ứng ghi
+> "chưa đo". Repo không điền số ước đoán; mọi con số lấy từ file trong `reports/`.
+
+## Bài toán và điểm đáng chú ý
+
+- **Dữ liệu:** [Mendeley Data](https://data.mendeley.com/datasets/njdjkbxdpn/1) (CC BY 4.0), 6.772 ảnh
+  web, 10.718 bbox hợp lệ, 6 lớp. Xem [DATASET.md](DATASET.md).
+- **Phát hiện chính của bước kiểm tra dữ liệu:** 4.853/6.772 ảnh (71,7%) thuộc nhóm ảnh trùng/gần trùng
+  (chỉ khoảng 4.264 bức ảnh khác nhau). Trong cách chia train/val gốc, **322/496 ảnh val (64,9%) có bản
+  gần trùng trong train**, nên mAP đo trên val gốc sẽ bị thổi phồng. Cách chia mới `splits/v2` gom cả
+  nhóm vào cùng một tập (0 nhóm nằm ở hai tập) và có thêm tập test riêng.
+- **Kỷ luật đánh giá:** mọi lựa chọn dựa trên val; tập test bị khoá trong code (`--final`, chạy một lần).
+- **Tái lập:** seed cố định, phiên bản thư viện được pin, mỗi lần train lưu config + môi trường + MLflow.
+
+## Kiến trúc quy trình
+
+```mermaid
+flowchart LR
+    A[(Dataset Mendeley<br/>ngoài git)] --> B[audit<br/>nhãn, ảnh hỏng, CSV vs TXT]
+    B --> C[find-duplicates<br/>pHash, nhóm gần trùng]
+    C --> D[make-split<br/>train/val/test theo nhóm]
+    D --> E[train<br/>Ultralytics + MLflow]
+    E --> F[evaluate<br/>mAP, AP từng lớp, confusion]
+    F --> G[export<br/>ONNX, TensorRT FP16/INT8]
+    G --> H[benchmark<br/>latency, throughput, VRAM, mAP]
+    G --> I[serve<br/>FastAPI + Gradio + Docker]
+```
+
+## Kết quả
+
+### Dữ liệu (đã đo, nguồn: `reports/`)
+
+| Cách chia | Ảnh train / val / test | Ảnh val có bản gần trùng trong train | Nhóm gần trùng nằm ở >1 tập |
+|---|---|---|---|
+| `legacy` (gốc) | 6.206 / 496 / – | **322 (64,9%)** | 311 |
+| `v2` (mới) | 5.412 / 681 / 679 | 0 | **0** |
+
+### Thí nghiệm trên val (chọn model)
+
+Bảng tự sinh trong [ROADMAP.md](ROADMAP.md#thí-nghiệm-chọn-trên-val-dòng-cuối--kết-quả-test-của-model-được-chọn)
+từ `reports/experiments/`. **Chưa đo** (chưa chạy train).
+
+### Kết quả cuối trên tập test
+
+**Chưa đo.** Sẽ có trong `reports/test_results.json` (một lần duy nhất, cho model đã chọn bằng val) kèm
+AP từng lớp và confusion matrix (`reports/test_results.confusion.png`).
+
+### Benchmark RTX 4060 Laptop 8 GB
+
+**Chưa đo.** Bảng sẽ sinh từ `reports/benchmark.csv`: PyTorch FP32/FP16, ONNX Runtime, TensorRT
+FP16/INT8 (latency p50/p95, throughput batch 1/4/8/16, VRAM, mAP50-95).
+
+### Demo
+
+GIF demo: chưa có (xem [docs/DEMO_RECORDING.md](docs/DEMO_RECORDING.md) để quay).
 
 ## Cài đặt
 
@@ -15,114 +75,89 @@ Yêu cầu: Python ≥ 3.10, GPU NVIDIA (đã kiểm tra trên RTX 4060 Laptop 8
 bash scripts/setup_env.sh        # tạo .venv, cài requirements-dev.txt, cài package ở chế độ editable
 ```
 
-Script này tương đương:
+Tương đương: `python3 -m venv .venv`, `pip install -r requirements-dev.txt`, `pip install -e . --no-deps`.
+Phiên bản pin trong `requirements.txt`; bản đóng băng đầy đủ ở `requirements-lock.txt`.
 
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -U pip
-.venv/bin/python -m pip install -r requirements-dev.txt   # torch 2.15.0, ultralytics 8.4.216, pytest, ruff
-.venv/bin/python -m pip install -e . --no-deps
-```
+## Tái lập từng bước
 
-Phiên bản được cố định trong `requirements.txt`; bản đóng băng đầy đủ ở `requirements-lock.txt`.
-
-## Dataset
-
-Nguồn: [Mendeley Data](https://data.mendeley.com/datasets/njdjkbxdpn/1) (không nằm trong repo).
-Tải về và giải nén sao cho có `Images/` và `Labels/{CSV Format,TXT format,...}`, rồi trỏ tới đó:
+Tải dataset từ Mendeley, giải nén sao cho có `Images/` và `Labels/`, rồi:
 
 ```bash
 export DATA_ROOT=/duong/dan/toi/dataset   # mặc định: <repo>/data (đã được .gitignore)
-```
 
-## Sử dụng
+# 1. Dữ liệu: kiểm tra, tìm ảnh trùng, chia tập (cách chia cũ để so sánh)
+python -m vehicledet audit             # -> reports/data_audit.md
+python -m vehicledet find-duplicates   # -> reports/duplicates.md
+python -m vehicledet make-split        # -> splits/v2/, reports/split_stats.md
+python -m vehicledet make-legacy-split # -> splits/legacy/
 
-```bash
-# 1a. Kiểm tra dữ liệu, tìm ảnh trùng, chia train/val/test không rò rỉ (xem DATASET.md)
-python -m vehicledet audit            # -> reports/data_audit.md
-python -m vehicledet find-duplicates  # -> reports/duplicates.md
-python -m vehicledet make-split       # -> splits/v2/{train,val,test}.txt, reports/split_stats.md
-
-# 1b. Cách chia cũ (train_labels.csv trừ test_labels.csv) -> splits/legacy/, dùng để so sánh
-python -m vehicledet make-legacy-split
-
-# 2. (tuỳ chọn) dựng thư mục YOLO bằng symlink + data.yaml; lệnh train tự làm bước này
-python -m vehicledet prepare-data --split v2
-
-# 3. Train một thí nghiệm (tự đánh giá best.pt trên val, ghi MLflow + reports/experiments/<tên>/)
-python -m vehicledet train --config configs/exp3b_yolo11s_v2_640.yaml
-python -m vehicledet train --config configs/train_smoke.yaml     # chạy thử pipeline (1 epoch, 2% dữ liệu)
-
-# 3b. Chạy tuần tự các thí nghiệm 1–3 (qua đêm; bỏ qua cái đã xong) rồi tổng hợp bảng
+# 2. Thí nghiệm 1–3 (qua đêm; bỏ qua cái đã xong), rồi tổng hợp bảng vào ROADMAP
 bash scripts/run_experiments.sh
 python scripts/summarize_runs.py --roadmap ROADMAP.md
+mlflow ui --backend-store-uri sqlite:///mlflow.db   # xem MLflow local
 
-# 4. Đánh giá weights trên val (tập test cần --final và chỉ chạy một lần, xem bên dưới)
+# 3. Đánh giá trên val; tập test chỉ chạy một lần với model đã chốt
 python -m vehicledet evaluate --weights runs/detect/<tên>/weights/best.pt --split v2 --part val
-```
+python -m vehicledet evaluate --weights runs/detect/<tên>/weights/best.pt --split v2 --part test --final
 
-Mỗi run lưu ở `runs/` (không đưa lên git) kèm `vehicledet_run.json` (config, phiên bản thư viện, GPU,
-git commit). Kết quả gọn (json/csv/confusion matrix png) nằm ở `reports/experiments/<tên>/` và được
-đưa lên git. MLflow chạy local (sqlite `mlflow.db` + `mlruns/`, đều bị `.gitignore`):
-
-```bash
-mlflow ui --backend-store-uri sqlite:///mlflow.db
-```
-
-**Quy tắc tập test:** mọi lựa chọn model/siêu tham số dựa trên **val**. `evaluate --part test` bị từ
-chối nếu thiếu `--final`, và chỉ ghi vào `reports/test_results.json` một lần (không ghi đè trừ khi
-`--allow-rerun`).
-
-## Export, benchmark, API và demo
-
-Sau khi chọn model bằng val (xem ROADMAP):
-
-```bash
-# Export ONNX + TensorRT FP16/INT8 (INT8 hiệu chuẩn bằng 500 ảnh TRAIN) -> exports/<tag>/
+# 4. Export + benchmark (TensorRT/onnxruntime-gpu cần cài thêm: docs/TENSORRT_SETUP.md)
 python -m vehicledet export --weights runs/detect/<tên>/weights/best.pt --tag <tên>
-
-# Benchmark tốc độ/VRAM/mAP -> reports/benchmark.csv (định dạng không chạy được ghi "chưa đo")
 python -m vehicledet benchmark --model-dir exports/<tên> --map-part val
-# TensorRT và onnxruntime-gpu cần cài thêm: docs/TENSORRT_SETUP.md
 
-# API FastAPI (ONNX Runtime, chạy được cả CPU): http://127.0.0.1:8000/docs
-python -m vehicledet serve --model exports/<tên>/best.onnx
-curl -F "file=@anh.jpg" "http://127.0.0.1:8000/predict?conf=0.25"
-
-# Demo Gradio dùng chung lõi inference với API
-python -m vehicledet demo --model exports/<tên>/best.onnx
+# 5. Phục vụ model (ONNX Runtime, chạy được cả CPU)
+python -m vehicledet serve --model exports/<tên>/best.onnx    # http://127.0.0.1:8000/docs
+python -m vehicledet demo  --model exports/<tên>/best.onnx    # Gradio
 ```
 
-API: `POST /predict` (ảnh, tham số `conf`, `iou`; giới hạn `MAX_UPLOAD_MB`, mặc định 10 MB; lỗi: 400 ảnh
-không hợp lệ, 413 quá lớn, 422 tham số sai, 503 model chưa nạp) và `GET /health`.
-
-Docker (CPU, ONNX Runtime; image ~760 MB, không chứa torch/ultralytics):
+API: `POST /predict` (ảnh + `conf`, `iou`; giới hạn `MAX_UPLOAD_MB`, mặc định 10 MB; lỗi 400/413/422/503)
+và `GET /health`.
 
 ```bash
+# Docker CPU (image ~760 MB, không chứa torch/ultralytics)
 mkdir -p models && cp exports/<tên>/best.onnx models/best.onnx
 docker compose up --build api                  # API  -> http://localhost:8000/docs
 docker compose --profile demo up --build demo  # demo -> http://localhost:7860
 ```
 
-Bản GPU (`docker/Dockerfile.gpu`, profile `gpu`) mới được viết, **chưa kiểm thử**. Hướng dẫn đưa demo
-CPU lên Hugging Face Spaces: [docs/HF_SPACES.md](docs/HF_SPACES.md).
+`docker/Dockerfile.gpu` (profile `gpu`) mới được viết, **chưa kiểm thử**. Đưa demo lên Hugging Face
+Spaces: [docs/HF_SPACES.md](docs/HF_SPACES.md).
 
-## Chất lượng dữ liệu
+## Cấu trúc repo
 
-Tóm tắt (chi tiết: [DATASET.md](DATASET.md)): **71,7% ảnh nằm trong nhóm ảnh trùng/gần trùng** và
-**64,9% ảnh val của cách chia cũ có bản gần trùng trong train** (rò rỉ). Cách chia mới `splits/v2`
-gom cả nhóm vào cùng một tập nên không còn nhóm nào nằm ở hai tập.
+```
+configs/        data.yaml (tên lớp), exp*.yaml (mỗi file = một thí nghiệm, chỉ đổi một thứ)
+src/vehicledet/ data/ (audit, dedup, make_split...), train, evaluate, export, benchmark, serve/
+splits/         danh sách ảnh theo tập: legacy/ và v2/ (train/val/test)
+scripts/        setup_env.sh, run_experiments.sh, summarize_runs.py, check_serve_parity.py
+tests/          pytest (dữ liệu giả, không cần GPU/dataset)
+reports/        kết quả đo (json/csv/png nhỏ) – nguồn của mọi số liệu
+docker/ docs/   Dockerfile CPU/GPU; hướng dẫn TensorRT, Hugging Face Spaces, quay demo
+```
 
-## Kiểm thử
+## Kiểm thử và CI
 
 ```bash
-python -m pytest                 # không cần GPU/dataset
+python -m pytest                 # 107 test, không cần GPU/dataset
 ruff check . && ruff format --check .
 ```
 
+GitHub Actions (`.github/workflows/ci.yml`) chạy ruff + pytest trên CPU, không cần dataset hay GPU.
+
+## Tài liệu
+
+[DATASET.md](DATASET.md) (dataset card) · [MODEL_CARD.md](MODEL_CARD.md) · [ROADMAP.md](ROADMAP.md) ·
+[docs/](docs/)
+
+## Giới hạn và sử dụng có trách nhiệm
+
+Project phục vụ học tập/nghiên cứu về computer vision trên ảnh công khai. Không dùng để ra quyết định
+giám sát hay quân sự thực tế: phân loại "quân sự/dân sự" theo hình dạng có thể sai, và sai sót có hậu
+quả nghiêm trọng. Chi tiết: [MODEL_CARD.md](MODEL_CARD.md).
+
 ## License
 
-- Mã dùng **Ultralytics (AGPL-3.0)**: nếu phân phối code hoặc weights huấn luyện bằng Ultralytics,
-  cần tuân thủ AGPL-3.0 (hoặc có giấy phép doanh nghiệp của Ultralytics).
-- Dataset thuộc điều khoản của Mendeley Data (xem trang dataset); không phân phối lại dữ liệu gốc.
+- Mã dùng **Ultralytics (AGPL-3.0)**: nếu phân phối code hoặc weights huấn luyện bằng Ultralytics, cần
+  tuân thủ AGPL-3.0 (hoặc có giấy phép doanh nghiệp của Ultralytics).
+- Dataset: **CC BY 4.0** (Gupta, Pareek, Singal, Rao; DRDO Institute for System Studies and Analyses).
+  Ảnh gốc có thể có bản quyền riêng; không phân phối lại ảnh.
 - Chưa chọn license cho mã nguồn của riêng repo này.
