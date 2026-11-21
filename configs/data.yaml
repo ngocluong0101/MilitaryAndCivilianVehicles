@@ -1,0 +1,13 @@
+# Định nghĩa lớp – nguồn duy nhất cho tên lớp (thứ tự = class id trong file nhãn YOLO .txt)
+names:
+  0: military truck
+  1: civilian car
+  2: military tank
+  3: civilian aircraft
+  4: military aircraft
+  5: military helicopter
+
+# Cấu trúc dataset gốc (Mendeley Data) bên trong DATA_ROOT
+images_dir: Images
+txt_labels_dir: Labels/TXT format
+csv_labels_dir: Labels/CSV Format

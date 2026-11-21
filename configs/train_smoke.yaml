@@ -1,0 +1,15 @@
+# Chạy thử pipeline (không có ý nghĩa về độ chính xác): 1 epoch trên 2% dữ liệu
+model: yolo11n.pt
+split: legacy
+seed: 0
+project: runs/smoke
+name: smoke
+train:
+  epochs: 1
+  imgsz: 320
+  batch: 8
+  workers: 2
+  fraction: 0.02
+  deterministic: true
+  plots: false
+  val: true

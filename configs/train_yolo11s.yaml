@@ -1,0 +1,13 @@
+model: yolo11s.pt
+split: legacy
+seed: 0
+project: runs/detect
+name: yolo11s_legacy_640
+train:
+  epochs: 100
+  patience: 20
+  imgsz: 640
+  batch: 16
+  workers: 4
+  deterministic: true
+  plots: true
