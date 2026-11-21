@@ -1,13 +1,13 @@
 # ROADMAP – Nâng cấp Military & Civilian Vehicle Detection
 
-Trạng thái: Phase 1 / 7 (chờ duyệt) · Cập nhật: 2026-11-21
+Trạng thái: Phase 2 / 7 (chờ duyệt) · Cập nhật: 2026-11-22
 
 ## Tiến độ
 | Phase | Nội dung | Trạng thái |
 |---|---|---|
 | 0 | Khảo sát & ROADMAP | ✅ |
-| 1 | Dọn repo & cấu trúc lại | ✅ (chờ bạn duyệt) |
-| 2 | Kiểm tra dữ liệu & chia lại tập | ⬜ |
+| 1 | Dọn repo & cấu trúc lại | ✅ |
+| 2 | Kiểm tra dữ liệu & chia lại tập | ✅ (chờ bạn duyệt) |
 | 3 | Train & thí nghiệm | ⬜ |
 | 4 | Phân tích lỗi | ⬜ |
 | 5 | Export & benchmark RTX 4060 | ⬜ |
@@ -109,17 +109,17 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - [x] Dừng và báo cáo
 
 ### Phase 2 – Kiểm tra chất lượng dữ liệu & chia lại tập
-- [ ] `data audit` → `reports/data_audit.md` + json
-  - [ ] Số ảnh, bbox/lớp, bbox/ảnh, ảnh không nhãn
-  - [ ] Phân bố kích thước bbox (COCO small/medium/large) theo lớp
-  - [ ] Nhãn hỏng (class id, toạ độ, bbox 0, thiếu/thừa file, ảnh hỏng)
-  - [ ] So sánh CSV ↔ TXT
-- [ ] Ảnh trùng/gần trùng (pHash + Hamming), trong và giữa các tập; xuất danh sách + ảnh minh hoạ
-- [ ] Chia lại train/val/test (80/10/10), stratify, nhóm gần trùng chung một tập, seed cố định, `splits/*.txt`
-- [ ] Giữ cách chia cũ để so sánh ở Phase 3
-- [ ] `DATASET.md`
-- [ ] Test (nhãn, chia tập không rò rỉ nhóm trùng) bằng dữ liệu giả
-- [ ] Dừng và báo cáo
+- [x] `data audit` → `reports/data_audit.md` + json
+  - [x] Số ảnh, bbox/lớp, bbox/ảnh, ảnh không nhãn
+  - [x] Phân bố kích thước bbox (COCO small/medium/large) theo lớp
+  - [x] Nhãn hỏng (class id, toạ độ, bbox 0, thiếu/thừa file, ảnh hỏng) – kết quả: 0 lỗi cứng
+  - [x] So sánh CSV ↔ TXT
+- [x] Ảnh trùng/gần trùng (pHash + Hamming), trong và giữa các tập; danh sách + ảnh minh hoạ ở `reports/duplicates*`
+- [x] Chia lại train/val/test (80/10/10), stratify, nhóm gần trùng chung một tập, seed 0, `splits/v2/*.txt`
+- [x] Giữ cách chia cũ (`splits/legacy`) để so sánh ở Phase 3
+- [x] `DATASET.md`
+- [x] Test (nhãn, audit, dedup, chia tập không rò rỉ nhóm trùng) bằng dữ liệu giả – 50 test pass, ruff sạch
+- [x] Dừng và báo cáo
 
 ### Phase 3 – Train & thí nghiệm có so sánh
 - [ ] MLflow local
@@ -163,10 +163,18 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 > Chưa đo – chưa có số liệu thật nào. Các bảng dưới đây sẽ được điền từ file trong `reports/`.
 
 ### Dữ liệu
-| Split | Số ảnh | Số bbox | Ảnh trùng/gần trùng phát hiện | Nhãn lỗi |
-|---|---|---|---|---|
-| train (cách chia cũ) | 6.206 (theo `custom_data.yaml`, chưa kiểm chứng) | chưa đo | chưa đo | chưa đo |
-| val (cách chia cũ) | 496 (theo `custom_data.yaml`, chưa kiểm chứng) | chưa đo | chưa đo | chưa đo |
+Nguồn: `reports/data_audit.json`, `reports/duplicates.json`, `reports/split_stats.json`.
+
+| Split | Số ảnh | Số bbox | Ảnh gần trùng với tập khác | Ảnh gần trùng trong chính tập | Nhãn lỗi |
+|---|---|---|---|---|---|
+| Toàn bộ dataset | 6.772 | 10.718 | 4.853 ảnh (71,7%) thuộc 2.345 nhóm | – | 0 lỗi cứng; 36 dòng trùng hệt (4 ảnh), 3 bbox < 4 px |
+| legacy train | 6.206 | 9.997 | 345 (có bản trong val) | 4.188 | 0 |
+| legacy val | 496 | 718 | **322 (64,9%)** (có bản trong train) | 68 | 0 |
+| v2 train | 5.412 | 8.535 | 0 | 3.870 | 0 |
+| v2 val | 681 | 1.068 | 0 | 492 | 0 |
+| v2 test | 679 | 1.115 | 0 | 491 | 0 |
+
+Ảnh nền (không bbox): legacy 0; v2 train/val/test = 53/7/7. Kiểm tra chéo độc lập (dHash 8×8, Hamming ≤ 4): legacy 348 cặp khác tập, v2 14 cặp (đã xem tay: đều là ảnh khác nhau, cùng bố cục).
 
 ### Thí nghiệm (chọn trên val; dòng cuối = kết quả test của model được chọn)
 | # | Model | Split | imgsz | mAP50 | mAP50-95 | Lớp yếu nhất (AP) | Thời gian train | MLflow run |
@@ -185,11 +193,19 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - 2026-11-21: Cách chia cũ được tái tạo thành `splits/legacy/{train,val}.txt` (6.206 / 496, khớp số trong `custom_data.yaml`) để so sánh ở Phase 3. Cách chia mới (Phase 2) sẽ vào `splits/v2/`.
 - 2026-11-21: Đã xoá `custom_data.yaml` và `split_dataset.py` (thay bằng `configs/data.yaml` + `vehicledet.data.splits`); bản cũ còn trong lịch sử git.
 
+- 2026-11-22: Phát hiện ảnh trùng bằng pHash 16×16 ≤ 56 **hoặc** pHash 8×8 ≤ 4; ngưỡng chọn bằng cách xem ảnh theo từng mức khoảng cách; số nhóm phẳng trong 8–56, bị nối dây chuyền từ 64. Ưu tiên chống rò rỉ nên chấp nhận gộp thêm vài ảnh chỉ "cùng mẫu". Kiểm tra chéo bằng dHash độc lập.
+- 2026-11-22: Nhãn chính = TXT (YOLO); CSV chỉ để đối chiếu. Không sửa nhãn nào. 4 file TXT lặp khối dòng để nguyên (Ultralytics tự loại dòng trùng).
+- 2026-11-22: 67 ảnh không bbox được giữ làm ảnh nền trong `v2` (gần như đều là ảnh nền thật sau khi xem tay). Hệ quả: so sánh `legacy` vs `v2` ở Phase 3 khác nhau ở cả cách chia lẫn thành phần (v2 có thêm ảnh nền + 3 ảnh bị đổi tên) – phải ghi rõ khi báo cáo.
+- 2026-11-22: Phase 3 mục 5 (xử lý mất cân bằng lớp) **chưa cần**: lớp nhiều/ít nhất chỉ ≈ 1,8 lần theo bbox (2.428 vs 1.373) và mỗi tập có đủ cả 6 lớp. Chỉ làm nếu kết quả AP theo lớp cho thấy lớp yếu liên quan tới số lượng.
+
 ## Vấn đề còn mở
 - **Cần bạn chạy để hoàn tất việc xoá `myCV/` và `interview.md` khỏi GitHub:** `git push --force origin main` (lịch sử đã viết lại cục bộ; hash các commit từ `update` trở đi đã đổi, hiện tại `main` = `3e82533`). Bản sao lưu trước khi viết lại: `../MilitaryAndCivilianVehicles-pre-filter.bundle` (chứa cả CV và interview.md; xoá sau khi xác nhận ổn). GitHub vẫn có thể giữ commit cũ trong cache/fork/PR; nếu từng lộ thì coi như đã lộ.
 - Cập nhật 2026-11-21: đã xoá `interview.md` khỏi lịch sử (0 tham chiếu `interview`/`myCV` trong mọi commit); cây thư mục của HEAD không đổi.
-- Dữ liệu thực tế (phát hiện lúc dựng split cũ, chưa phải kết luận audit): 3 tên file trong `train_labels.csv` không có ảnh trên đĩa (`1convoy.jpg`, `h1.jpg`, `ripsaw.jpg`); 70 ảnh không xuất hiện trong CSV nào (67 ảnh có file nhãn TXT rỗng, 3 ảnh có nhãn TXT nhưng không có trong CSV); `test_labels.csv` (496) nằm trọn trong `train_labels.csv`. Tổng 6.772 ảnh, 6.772 file TXT/XML. Phase 2 sẽ audit đầy đủ.
+- Trang Mendeley ghi 6.642 ảnh dương / 130 ảnh âm / 11.528 đối tượng, trong khi đếm từ file thật là 6.705 / 67 / 10.718 bbox hợp lệ. Chưa rõ lý do (xem `DATASET.md`); project dùng số đếm từ file.
+- Train v2 vẫn chứa nhiều bản sao gần trùng trong chính nó (3.870/5.412 ảnh): không gây rò rỉ nhưng làm số ảnh "hiệu dụng" nhỏ hơn (~4.264 bức ảnh khác nhau toàn dataset). Có thể cân nhắc khi giải thích kết quả ở Phase 3.
+- pHash không bắt ảnh lật ngang/crop mạnh; ảnh gần trùng loại này (nếu có) vẫn có thể nằm ở hai tập khác nhau.
+- Bản quyền ảnh gốc của dataset chưa xác minh (trang Mendeley chỉ nêu license CC BY 4.0 cho dataset).
 - Cảnh báo vô hại khi train: `Python.h: No such file or directory` (triton không compile được vì thiếu `python3-dev`); Ultralytics vẫn chạy bình thường. Cài `python3.12-dev` nếu muốn mất cảnh báo.
 - Ultralytics ghi/cập nhật cấu hình toàn cục ở `~/.config/Ultralytics/settings.json` (dùng chung với project khác trên máy); không ảnh hưởng đường dẫn vì config dùng đường dẫn tuyệt đối.
 - Chưa chọn license cho mã nguồn repo (README ghi rõ).
-- Cách chia gốc của Mendeley (`train/test` CSV) chưa rõ có ngụ ý quy ước nào về tập test; sẽ xác nhận từ trang dataset ở Phase 2.
+- Trang Mendeley không mô tả cách chia train/test của CSV.

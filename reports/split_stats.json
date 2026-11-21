@@ -1,0 +1,154 @@
+{
+  "params": {
+    "name": "v2",
+    "seed": 0,
+    "ratios": [
+      0.8,
+      0.1,
+      0.1
+    ],
+    "dup_threshold": 56,
+    "dup_hash": "phash"
+  },
+  "splits": {
+    "legacy": {
+      "stats": {
+        "train": {
+          "images": 6206,
+          "boxes": 9997,
+          "background_images": 0,
+          "boxes_per_class": {
+            "military truck": 1298,
+            "civilian car": 2061,
+            "military tank": 2261,
+            "civilian aircraft": 1295,
+            "military aircraft": 1536,
+            "military helicopter": 1546
+          },
+          "images_per_main_class": {
+            "military truck": 884,
+            "civilian car": 971,
+            "military tank": 1505,
+            "civilian aircraft": 879,
+            "military aircraft": 909,
+            "military helicopter": 1058
+          }
+        },
+        "val": {
+          "images": 496,
+          "boxes": 718,
+          "background_images": 0,
+          "boxes_per_class": {
+            "military truck": 127,
+            "civilian car": 103,
+            "military tank": 166,
+            "civilian aircraft": 78,
+            "military aircraft": 105,
+            "military helicopter": 139
+          },
+          "images_per_main_class": {
+            "military truck": 77,
+            "civilian car": 61,
+            "military tank": 110,
+            "civilian aircraft": 69,
+            "military aircraft": 71,
+            "military helicopter": 108
+          }
+        }
+      },
+      "leakage_phash16": {
+        "groups_spanning_splits": 311,
+        "images_with_dup_in": {
+          "val": {
+            "train": 322
+          },
+          "train": {
+            "val": 345
+          }
+        },
+        "images_with_dup_in_same_split": {
+          "train": 4188,
+          "val": 68
+        }
+      },
+      "cross_split_pairs_dhash8_check": 348
+    },
+    "v2": {
+      "stats": {
+        "train": {
+          "images": 5412,
+          "boxes": 8535,
+          "background_images": 53,
+          "boxes_per_class": {
+            "military truck": 1128,
+            "civilian car": 1678,
+            "military tank": 1950,
+            "civilian aircraft": 1099,
+            "military aircraft": 1330,
+            "military helicopter": 1350
+          },
+          "images_per_main_class": {
+            "military truck": 769,
+            "civilian car": 824,
+            "military tank": 1292,
+            "civilian aircraft": 758,
+            "military aircraft": 784,
+            "military helicopter": 932
+          }
+        },
+        "val": {
+          "images": 681,
+          "boxes": 1068,
+          "background_images": 7,
+          "boxes_per_class": {
+            "military truck": 169,
+            "civilian car": 236,
+            "military tank": 226,
+            "civilian aircraft": 136,
+            "military aircraft": 136,
+            "military helicopter": 165
+          },
+          "images_per_main_class": {
+            "military truck": 97,
+            "civilian car": 104,
+            "military tank": 162,
+            "civilian aircraft": 95,
+            "military aircraft": 99,
+            "military helicopter": 117
+          }
+        },
+        "test": {
+          "images": 679,
+          "boxes": 1115,
+          "background_images": 7,
+          "boxes_per_class": {
+            "military truck": 129,
+            "civilian car": 250,
+            "military tank": 252,
+            "civilian aircraft": 138,
+            "military aircraft": 176,
+            "military helicopter": 170
+          },
+          "images_per_main_class": {
+            "military truck": 96,
+            "civilian car": 104,
+            "military tank": 162,
+            "civilian aircraft": 95,
+            "military aircraft": 98,
+            "military helicopter": 117
+          }
+        }
+      },
+      "leakage_phash16": {
+        "groups_spanning_splits": 0,
+        "images_with_dup_in": {},
+        "images_with_dup_in_same_split": {
+          "train": 3870,
+          "val": 492,
+          "test": 491
+        }
+      },
+      "cross_split_pairs_dhash8_check": 14
+    }
+  }
+}

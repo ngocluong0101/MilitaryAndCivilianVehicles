@@ -1,0 +1,18 @@
+{
+  "name": "v2",
+  "seed": 0,
+  "ratios": [
+    0.8,
+    0.1,
+    0.1
+  ],
+  "dup_threshold": 56,
+  "dup_hash": "phash",
+  "counts": {
+    "train": 5412,
+    "val": 681,
+    "test": 679
+  },
+  "excluded": 0,
+  "stratify_by": "main class of image (most boxes; background = no boxes)"
+}
