@@ -49,13 +49,29 @@ python -m vehicledet make-legacy-split
 # 2. (tuỳ chọn) dựng thư mục YOLO bằng symlink + data.yaml; lệnh train tự làm bước này
 python -m vehicledet prepare-data --split v2
 
-# 3. Train theo config
-python -m vehicledet train --config configs/train_yolo11s.yaml
+# 3. Train một thí nghiệm (tự đánh giá best.pt trên val, ghi MLflow + reports/experiments/<tên>/)
+python -m vehicledet train --config configs/exp3b_yolo11s_v2_640.yaml
 python -m vehicledet train --config configs/train_smoke.yaml     # chạy thử pipeline (1 epoch, 2% dữ liệu)
+
+# 3b. Chạy tuần tự các thí nghiệm 1–3 (qua đêm; bỏ qua cái đã xong) rồi tổng hợp bảng
+bash scripts/run_experiments.sh
+python scripts/summarize_runs.py --roadmap ROADMAP.md
+
+# 4. Đánh giá weights trên val (tập test cần --final và chỉ chạy một lần, xem bên dưới)
+python -m vehicledet evaluate --weights runs/detect/<tên>/weights/best.pt --split v2 --part val
 ```
 
 Mỗi run lưu ở `runs/` (không đưa lên git) kèm `vehicledet_run.json` (config, phiên bản thư viện, GPU,
-git commit).
+git commit). Kết quả gọn (json/csv/confusion matrix png) nằm ở `reports/experiments/<tên>/` và được
+đưa lên git. MLflow chạy local (sqlite `mlflow.db` + `mlruns/`, đều bị `.gitignore`):
+
+```bash
+mlflow ui --backend-store-uri sqlite:///mlflow.db
+```
+
+**Quy tắc tập test:** mọi lựa chọn model/siêu tham số dựa trên **val**. `evaluate --part test` bị từ
+chối nếu thiếu `--final`, và chỉ ghi vào `reports/test_results.json` một lần (không ghi đè trừ khi
+`--allow-rerun`).
 
 ## Chất lượng dữ liệu
 

@@ -1,14 +1,14 @@
 # ROADMAP – Nâng cấp Military & Civilian Vehicle Detection
 
-Trạng thái: Phase 2 / 7 (chờ duyệt) · Cập nhật: 2026-11-22
+Trạng thái: Phase 3 / 7 (đã chuẩn bị code, chưa train) · Cập nhật: 2026-11-22
 
 ## Tiến độ
 | Phase | Nội dung | Trạng thái |
 |---|---|---|
 | 0 | Khảo sát & ROADMAP | ✅ |
 | 1 | Dọn repo & cấu trúc lại | ✅ |
-| 2 | Kiểm tra dữ liệu & chia lại tập | ✅ (chờ bạn duyệt) |
-| 3 | Train & thí nghiệm | ⬜ |
+| 2 | Kiểm tra dữ liệu & chia lại tập | ✅ |
+| 3 | Train & thí nghiệm | 🟨 code xong, chưa chạy train |
 | 4 | Phân tích lỗi | ⬜ |
 | 5 | Export & benchmark RTX 4060 | ⬜ |
 | 6 | API, Docker & demo Gradio | ⬜ |
@@ -122,12 +122,15 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - [x] Dừng và báo cáo
 
 ### Phase 3 – Train & thí nghiệm có so sánh
-- [ ] MLflow local
-- [ ] `evaluate.py` (mAP50, mAP50-95, P, R, AP từng lớp, confusion matrix, latency)
-- [ ] Thí nghiệm trên val: (1) yolov5su cách chia cũ, (2) yolov5su chia mới, (3) YOLO11n/s, (4) imgsz 640 vs 960, (5) xử lý mất cân bằng (nếu cần)
-- [ ] Epoch hợp lý + early stopping; ghi thời gian train
+- [x] MLflow local (sqlite + `mlruns/`): log config, phiên bản thư viện, seed, metric từng epoch, AP từng lớp, artifact nhỏ (đã kiểm thử end-to-end trên CPU)
+- [x] `evaluate.py` (mAP50, mAP50-95, P, R, AP từng lớp, confusion matrix, latency khi val) – chạy trên split/part bất kỳ; tập test có khoá `--final`, ghi một lần
+- [x] Config thí nghiệm `configs/exp1…exp4` (mỗi file đổi một thứ) + `scripts/run_experiments.sh` (chạy tuần tự, bỏ qua cái đã xong)
+- [x] `scripts/summarize_runs.py` → bảng vào ROADMAP (giữa cặp marker `EXPERIMENTS`)
+- [x] Tải sẵn weights (`weights/`: yolov5su, yolo11n, yolo11s)
+- [ ] **Chạy** thí nghiệm trên val: (1) yolov5su chia cũ, (2) yolov5su chia mới, (3) YOLO11n/s, (4) imgsz 640 vs 960 – *chưa chạy, cần GPU*
+- [ ] (5) Xử lý mất cân bằng lớp – *chưa cần theo audit (xem Quyết định 2026-11-22); chỉ làm nếu AP từng lớp cho thấy*
+- [ ] Chốt số epoch/early stopping (đang đặt tạm 60 / patience 15, chờ bạn xác nhận) và ghi thời gian train
 - [ ] Chạy model được chọn **một lần** trên test → `reports/test_results.json`
-- [ ] `scripts/summarize_runs.py` → bảng vào ROADMAP
 - [ ] Dừng và báo cáo
 
 ### Phase 4 – Phân tích lỗi
@@ -177,9 +180,13 @@ Nguồn: `reports/data_audit.json`, `reports/duplicates.json`, `reports/split_st
 Ảnh nền (không bbox): legacy 0; v2 train/val/test = 53/7/7. Kiểm tra chéo độc lập (dHash 8×8, Hamming ≤ 4): legacy 348 cặp khác tập, v2 14 cặp (đã xem tay: đều là ảnh khác nhau, cùng bố cục).
 
 ### Thí nghiệm (chọn trên val; dòng cuối = kết quả test của model được chọn)
-| # | Model | Split | imgsz | mAP50 | mAP50-95 | Lớp yếu nhất (AP) | Thời gian train | MLflow run |
-|---|---|---|---|---|---|---|---|---|
-| – | chưa chạy | | | | | | | |
+Sinh tự động từ `reports/experiments/*/` bằng `python scripts/summarize_runs.py --roadmap ROADMAP.md`. Lưu ý: dòng `val` của `legacy` và `v2` là **hai tập val khác nhau** (legacy val bị rò rỉ), không so trực tiếp như cùng một phép đo.
+
+<!-- EXPERIMENTS:START (sinh bởi scripts/summarize_runs.py, đừng sửa tay) -->
+| # | Model | Split | imgsz | mAP50 | mAP50-95 | Lớp yếu nhất (AP50-95) | Thời gian train | Epoch | MLflow run |
+|---|---|---|---|---|---|---|---|---|---|
+| – | chưa chạy | | | | | | | | |
+<!-- EXPERIMENTS:END -->
 
 ### Benchmark (RTX 4060 Laptop 8 GB, input chưa xác định)
 | Định dạng | Precision | Latency p50 (ms) | p95 (ms) | Throughput b16 (img/s) | VRAM (MB) | mAP50-95 test |
@@ -197,6 +204,10 @@ Nguồn: `reports/data_audit.json`, `reports/duplicates.json`, `reports/split_st
 - 2026-11-22: Nhãn chính = TXT (YOLO); CSV chỉ để đối chiếu. Không sửa nhãn nào. 4 file TXT lặp khối dòng để nguyên (Ultralytics tự loại dòng trùng).
 - 2026-11-22: 67 ảnh không bbox được giữ làm ảnh nền trong `v2` (gần như đều là ảnh nền thật sau khi xem tay). Hệ quả: so sánh `legacy` vs `v2` ở Phase 3 khác nhau ở cả cách chia lẫn thành phần (v2 có thêm ảnh nền + 3 ảnh bị đổi tên) – phải ghi rõ khi báo cáo.
 - 2026-11-22: Phase 3 mục 5 (xử lý mất cân bằng lớp) **chưa cần**: lớp nhiều/ít nhất chỉ ≈ 1,8 lần theo bbox (2.428 vs 1.373) và mỗi tập có đủ cả 6 lớp. Chỉ làm nếu kết quả AP theo lớp cho thấy lớp yếu liên quan tới số lượng.
+
+- 2026-11-22: Đo thử 1 epoch yolo11s, imgsz 640, batch 16, train v2 (5.412 ảnh): ~65 giây/epoch (gồm val), VRAM đỉnh 3,97 GB. Ngoại suy 4 thí nghiệm 640 ≈ 6–7 giờ với 60 epoch (chưa đo riêng yolov5su/yolo11n/960). Đây là ước tính, không phải kết quả.
+- 2026-11-22: Dùng Tracker MLflow riêng, gỡ callback MLflow tích hợp của Ultralytics (nó log cả weights và đặt tên experiment theo đường dẫn) – chỉ ở mức run, không đổi cấu hình toàn cục. `reports/experiments/*/run_info.json` dùng đường dẫn `<repo>/…` để không lộ đường dẫn máy.
+- 2026-11-22: Khoá tập test ngay trong code: `evaluate --part test` cần `--final`, chỉ ghi `reports/test_results.json` một lần.
 
 ## Vấn đề còn mở
 - **Cần bạn chạy để hoàn tất việc xoá `myCV/` và `interview.md` khỏi GitHub:** `git push --force origin main` (lịch sử đã viết lại cục bộ; hash các commit từ `update` trở đi đã đổi, hiện tại `main` = `3e82533`). Bản sao lưu trước khi viết lại: `../MilitaryAndCivilianVehicles-pre-filter.bundle` (chứa cả CV và interview.md; xoá sau khi xác nhận ổn). GitHub vẫn có thể giữ commit cũ trong cache/fork/PR; nếu từng lộ thì coi như đã lộ.
