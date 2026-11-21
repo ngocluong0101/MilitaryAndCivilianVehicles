@@ -13,6 +13,16 @@ def test_parser_train_args():
     assert a.command == "train" and a.override == ["epochs=1"]
 
 
+def test_parser_data_commands():
+    pr = build_parser()
+    assert pr.parse_args(["audit"]).command == "audit"
+    assert pr.parse_args(["find-duplicates"]).threshold == 56
+    a = pr.parse_args(
+        ["make-split", "--name", "v3", "--seed", "5", "--ratios", "0.7", "0.2", "0.1"]
+    )
+    assert (a.name, a.seed, a.ratios) == ("v3", 5, [0.7, 0.2, 0.1])
+
+
 def test_make_legacy_split_end_to_end(fake_dataset, tmp_path, monkeypatch, capsys):
     # default SPLITS_DIR được gán lúc định nghĩa hàm -> ép ghi vào tmp_path
     from vehicledet.data import splits

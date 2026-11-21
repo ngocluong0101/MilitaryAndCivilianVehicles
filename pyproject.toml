@@ -26,3 +26,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# Các file này chứa chuỗi mẫu báo cáo tiếng Việt dài
+"src/vehicledet/data/commands.py" = ["E501"]

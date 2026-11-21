@@ -3,3 +3,6 @@ torch==2.15.0
 torchvision==0.29.2
 ultralytics==8.4.216
 PyYAML==6.0.4
+numpy==2.5.5
+Pillow==13.0.0
+ImageHash==4.3.2

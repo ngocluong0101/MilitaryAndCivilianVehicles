@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 
 from vehicledet.data.splits import write_legacy_split
@@ -29,6 +30,25 @@ def build_parser() -> argparse.ArgumentParser:
     )
     add_data_root(sp)
     sp.add_argument("--split", required=True, help="Tên thư mục trong splits/ (vd: legacy)")
+
+    sp = sub.add_parser("audit", help="Kiểm tra chất lượng dữ liệu -> reports/data_audit.{md,json}")
+    add_data_root(sp)
+
+    sp = sub.add_parser(
+        "find-duplicates", help="Tìm ảnh trùng/gần trùng (pHash) -> reports/duplicates.*"
+    )
+    add_data_root(sp)
+    sp.add_argument("--threshold", type=int, default=56, help="Ngưỡng Hamming trên pHash 16x16")
+
+    sp = sub.add_parser(
+        "make-split", help="Chia train/val/test theo nhóm gần trùng -> splits/<name>/"
+    )
+    add_data_root(sp)
+    sp.add_argument("--name", default="v2")
+    sp.add_argument("--seed", type=int, default=0)
+    sp.add_argument(
+        "--ratios", type=float, nargs=3, default=(0.8, 0.1, 0.1), metavar=("TRAIN", "VAL", "TEST")
+    )
 
     sp = sub.add_parser("train", help="Train từ file config")
     add_data_root(sp)
@@ -61,6 +81,43 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "prepare-data":
         ds = build_yolo_dataset(resolve_data_root(args.data_root), args.split)
         print(f"{ds.data_yaml}  counts={ds.counts}")
+    elif args.command == "audit":
+        from vehicledet.data.commands import run_audit
+
+        r = run_audit(resolve_data_root(args.data_root))
+        print(
+            json.dumps(
+                {
+                    "images": r["images"],
+                    "boxes": r["boxes"]["total"],
+                    "label_problems": r["label_problems"]["counts"],
+                    "csv_vs_txt": r["csv_vs_txt"]["status_counts"],
+                },
+                ensure_ascii=False,
+                indent=1,
+            )
+        )
+    elif args.command == "find-duplicates":
+        from vehicledet.data.commands import run_find_duplicates
+
+        r = run_find_duplicates(resolve_data_root(args.data_root), threshold=args.threshold)
+        print(json.dumps(r["summary"], ensure_ascii=False, indent=1))
+    elif args.command == "make-split":
+        from vehicledet.data.commands import run_make_split
+
+        r = run_make_split(
+            resolve_data_root(args.data_root), args.name, args.seed, tuple(args.ratios)
+        )
+        print(
+            json.dumps(
+                {
+                    k: v["stats"] and {p: s["images"] for p, s in v["stats"].items()}
+                    for k, v in r["report"].items()
+                },
+                indent=1,
+            )
+        )
+        print(f"loại khỏi split: {len(r['excluded'])} ảnh")
     elif args.command == "train":
         from vehicledet.train import run_train
 
