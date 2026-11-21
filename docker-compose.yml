@@ -1,0 +1,49 @@
+# Đặt model đã export vào ./models/best.onnx (vd: cp exports/<tag>/best.onnx models/best.onnx).
+#   docker compose up --build api                 # API CPU  -> http://localhost:8000/docs
+#   docker compose --profile demo up --build demo # demo Gradio -> http://localhost:7860
+#   docker compose --profile gpu up --build api-gpu   # API GPU (chưa kiểm thử, cần NVIDIA Container Toolkit)
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cpu
+    image: vehicledet:cpu
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/models:ro
+    environment:
+      MODEL_PATH: /models/best.onnx
+      MAX_UPLOAD_MB: "10"
+    restart: unless-stopped
+
+  demo:
+    profiles: ["demo"]
+    image: vehicledet:cpu
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.cpu
+    command: ["python", "-m", "vehicledet.serve.demo", "--model", "/models/best.onnx",
+              "--device", "cpu", "--host", "0.0.0.0", "--port", "7860"]
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./models:/models:ro
+
+  api-gpu:
+    profiles: ["gpu"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.gpu
+    image: vehicledet:gpu
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

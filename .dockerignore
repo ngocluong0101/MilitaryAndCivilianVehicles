@@ -1,0 +1,17 @@
+.venv
+.git
+data
+runs
+mlruns
+mlflow.db
+exports
+weights
+reports
+logs
+tests
+docs
+*.pt
+*.engine
+__pycache__
+.pytest_cache
+.ruff_cache

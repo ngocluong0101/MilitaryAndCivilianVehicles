@@ -1,0 +1,29 @@
+# CHƯA KIỂM THỬ trên máy này (chỉ viết sẵn). Cần NVIDIA Container Toolkit (docker runtime "nvidia").
+# API chạy ONNX Runtime GPU; engine TensorRT (.engine) phải được build trên đúng GPU/phiên bản
+# TensorRT dùng để chạy, và cần thêm gói tensorrt + ultralytics vào image (xem docs/TENSORRT_SETUP.md).
+#   docker build -f docker/Dockerfile.gpu -t vehicledet:gpu .
+#   docker run --rm --gpus all -p 8000:8000 -v "$PWD/models:/models:ro" vehicledet:gpu
+# Chọn BASE_IMAGE và ORT_GPU_VERSION khớp bảng tương thích CUDA/cuDNN của ONNX Runtime.
+ARG BASE_IMAGE=nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04
+FROM ${BASE_IMAGE}
+
+ARG ORT_GPU_VERSION=1.32.0
+ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
+RUN apt-get update && apt-get install -y --no-install-recommends python3 python3-pip python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY docker/requirements-serve.txt /tmp/
+# onnxruntime (CPU) và onnxruntime-gpu không dùng chung: bỏ dòng CPU rồi cài bản GPU
+RUN grep -v '^onnxruntime' /tmp/requirements-serve.txt > /tmp/req-gpu.txt \
+    && pip3 install -r /tmp/req-gpu.txt onnxruntime-gpu==${ORT_GPU_VERSION}
+
+COPY pyproject.toml requirements.txt ./
+COPY src ./src
+RUN pip3 install --no-deps .
+
+RUN useradd --create-home --uid 1000 app && mkdir -p /models && chown app /models
+USER app
+ENV MODEL_PATH=/models/best.onnx BACKEND=onnx DEVICE=cuda MAX_UPLOAD_MB=10
+EXPOSE 8000
+CMD ["uvicorn", "vehicledet.serve.app:app", "--host", "0.0.0.0", "--port", "8000"]
