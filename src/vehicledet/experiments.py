@@ -144,10 +144,12 @@ def write_summary(rows: list[dict], out_dir: Path) -> None:
             w.writerows(rows)
 
 
-def replace_marked_block(text: str, block: str) -> str:
-    """Thay nội dung giữa MARK_START và MARK_END (giữ nguyên hai dòng đánh dấu)."""
-    if MARK_START not in text or MARK_END not in text:
-        raise ValueError(f"File thiếu cặp đánh dấu {MARK_START!r} … {MARK_END!r}")
-    head, rest = text.split(MARK_START, 1)
-    _, tail = rest.split(MARK_END, 1)
-    return f"{head}{MARK_START}\n{block}{MARK_END}{tail}"
+def replace_marked_block(
+    text: str, block: str, start: str = MARK_START, end: str = MARK_END
+) -> str:
+    """Thay nội dung giữa hai dòng đánh dấu `start` và `end` (giữ nguyên hai dòng này)."""
+    if start not in text or end not in text:
+        raise ValueError(f"File thiếu cặp đánh dấu {start!r} … {end!r}")
+    head, rest = text.split(start, 1)
+    _, tail = rest.split(end, 1)
+    return f"{head}{start}\n{block}{end}{tail}"
