@@ -29,7 +29,7 @@ def test_overrides_parse_yaml_values():
 
 
 def test_build_train_args_is_absolute_and_seeded():
-    cfg = load_config(CONFIGS_DIR / "train_yolo11s.yaml")
+    cfg = load_config(CONFIGS_DIR / "exp3b_yolo11s_v2_640.yaml")
     args = build_train_args(cfg, Path("/x/data.yaml"))
     assert args["data"] == "/x/data.yaml"
     assert args["seed"] == 0

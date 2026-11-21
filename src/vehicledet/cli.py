@@ -52,14 +52,37 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("train", help="Train từ file config")
     add_data_root(sp)
-    sp.add_argument("--config", required=True, help="vd: configs/train_yolo11s.yaml")
+    sp.add_argument("--config", required=True, help="vd: configs/exp3b_yolo11s_v2_640.yaml")
     sp.add_argument(
         "--override",
         action="append",
         default=[],
         metavar="KEY=VALUE",
-        help="Ghi đè tham số train, vd: --override epochs=1",
+        help="Ghi đè tham số train hoặc model/split/name/seed, vd: --override epochs=1",
     )
+    sp.add_argument("--no-mlflow", action="store_true", help="Không ghi MLflow")
+    sp.add_argument(
+        "--skip-if-done",
+        action="store_true",
+        help="Bỏ qua nếu reports/experiments/<name>/ đã có kết quả",
+    )
+
+    sp = sub.add_parser("evaluate", help="Đánh giá weights trên một split -> reports/eval/*.json")
+    add_data_root(sp)
+    sp.add_argument("--weights", required=True)
+    sp.add_argument("--split", required=True, help="Tên thư mục trong splits/ (vd: v2)")
+    sp.add_argument("--part", choices=["val", "test"], default="val")
+    sp.add_argument("--imgsz", type=int, default=640)
+    sp.add_argument("--batch", type=int, default=16)
+    sp.add_argument("--device", default=None)
+    sp.add_argument("--workers", type=int, default=4)
+    sp.add_argument("--tag", default=None)
+    sp.add_argument(
+        "--final",
+        action="store_true",
+        help="BẮT BUỘC cho --part test: xác nhận đây là lần báo cáo cuối",
+    )
+    sp.add_argument("--allow-rerun", action="store_true", help="Cho phép ghi đè test_results.json")
     return p
 
 
@@ -121,5 +144,31 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "train":
         from vehicledet.train import run_train
 
-        print(run_train(args.config, args.data_root, args.override))
+        print(
+            run_train(
+                args.config,
+                args.data_root,
+                args.override,
+                use_mlflow=not args.no_mlflow,
+                skip_if_done=args.skip_if_done,
+            )
+        )
+    elif args.command == "evaluate":
+        from vehicledet.evaluate import run_evaluate
+
+        print(
+            run_evaluate(
+                args.weights,
+                args.split,
+                args.part,
+                args.data_root,
+                args.imgsz,
+                args.batch,
+                args.device,
+                args.workers,
+                args.tag,
+                args.final,
+                args.allow_rerun,
+            )
+        )
     return 0

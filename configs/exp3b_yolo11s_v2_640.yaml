@@ -1,0 +1,14 @@
+# Thí nghiệm 3b – YOLO11s. Chỉ đổi model so với exp2.
+model: yolo11s.pt
+split: v2
+seed: 0
+project: runs/detect   # tương đối so với gốc repo (được .gitignore)
+name: exp3b_yolo11s_v2_640
+train:
+  epochs: 60           # tối đa; early stopping dừng sớm nếu val không cải thiện
+  patience: 15
+  imgsz: 640
+  batch: 16            # 8 GB VRAM
+  workers: 4
+  deterministic: true
+  plots: true

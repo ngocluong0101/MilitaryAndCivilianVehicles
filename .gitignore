@@ -28,6 +28,8 @@ env/
 # Kết quả train, MLflow, weights, model đã export
 /runs/
 /mlruns/
+mlflow.db
+/logs/
 /weights/
 *.pt
 *.onnx

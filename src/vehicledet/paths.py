@@ -12,6 +12,9 @@ CONFIGS_DIR = REPO_ROOT / "configs"
 SPLITS_DIR = REPO_ROOT / "splits"
 REPORTS_DIR = REPO_ROOT / "reports"
 WEIGHTS_DIR = REPO_ROOT / "weights"
+EXPERIMENTS_DIR = REPORTS_DIR / "experiments"
+MLFLOW_DB = REPO_ROOT / "mlflow.db"
+MLRUNS_DIR = REPO_ROOT / "mlruns"
 
 
 def load_data_config() -> dict:
@@ -51,3 +54,15 @@ def txt_labels_dir(data_root: Path) -> Path:
 
 def csv_labels_dir(data_root: Path) -> Path:
     return data_root / load_data_config()["csv_labels_dir"]
+
+
+def portable(value):
+    """Thay đường dẫn tuyệt đối trong chuỗi/dict/list bằng <repo> hoặc ~ để file báo cáo (được
+    commit) không lộ tên người dùng/thư mục máy."""
+    if isinstance(value, str):
+        return value.replace(str(REPO_ROOT), "<repo>").replace(str(Path.home()), "~")
+    if isinstance(value, dict):
+        return {k: portable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [portable(v) for v in value]
+    return value

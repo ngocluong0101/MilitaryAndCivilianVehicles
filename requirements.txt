@@ -6,3 +6,4 @@ PyYAML==6.0.4
 numpy==2.5.5
 Pillow==13.0.0
 ImageHash==4.3.2
+mlflow==3.18.0
