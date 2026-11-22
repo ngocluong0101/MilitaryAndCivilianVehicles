@@ -1,0 +1,16 @@
+# Thí nghiệm 3c (phụ) – YOLO11n train dài hơn. CHỈ đổi số epoch so với exp3a (15 -> 30), vì cả 4 lượt trước
+# đều chưa hội tụ ở epoch 15 (epoch tốt nhất = epoch cuối). Chọn giữa exp3a và exp3c vẫn dựa trên val.
+model: yolo11n.pt
+split: v2
+seed: 0
+project: runs/detect   # tương đối so với gốc repo (được .gitignore)
+name: exp3c_yolo11n_v2_640_30ep
+train:
+  epochs: 30           # tối đa 30; early stopping dừng sớm nếu val không cải thiện
+  patience: 8
+  close_mosaic: 5
+  imgsz: 640
+  batch: 16            # 8 GB VRAM
+  workers: 4
+  deterministic: true
+  plots: true

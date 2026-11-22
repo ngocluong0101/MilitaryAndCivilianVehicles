@@ -1,0 +1,18 @@
+# Thí nghiệm 6 (khắc phục lỗi) – CHỈ đổi trọng số loss phân loại so với exp3c: cls 0.5 (mặc định) -> 1.0.
+# Lý do: phân tích lỗi cho thấy nhóm lỗi lớn nhất là nhầm lớp, trội nhất civilian aircraft -> military aircraft.
+# Đo lại trên VAL; ghi kết quả kể cả khi không cải thiện.
+model: yolo11n.pt
+split: v2
+seed: 0
+project: runs/detect   # tương đối so với gốc repo (được .gitignore)
+name: exp6_yolo11n_v2_640_30ep_cls1
+train:
+  epochs: 30
+  patience: 8
+  close_mosaic: 5
+  cls: 1.0             # trọng số loss phân loại (mặc định 0.5)
+  imgsz: 640
+  batch: 16            # 8 GB VRAM
+  workers: 4
+  deterministic: true
+  plots: true

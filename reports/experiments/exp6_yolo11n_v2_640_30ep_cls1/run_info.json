@@ -1,0 +1,63 @@
+{
+  "name": "exp6_yolo11n_v2_640_30ep_cls1",
+  "config": {
+    "model": "yolo11n.pt",
+    "split": "v2",
+    "seed": 0,
+    "project": "runs/detect",
+    "name": "exp6_yolo11n_v2_640_30ep_cls1",
+    "train": {
+      "epochs": 30,
+      "patience": 8,
+      "close_mosaic": 5,
+      "cls": 1.0,
+      "imgsz": 640,
+      "batch": 16,
+      "workers": 4,
+      "deterministic": true,
+      "plots": true
+    }
+  },
+  "train_args": {
+    "epochs": 30,
+    "patience": 8,
+    "close_mosaic": 5,
+    "cls": 1.0,
+    "imgsz": 640,
+    "batch": 16,
+    "workers": 4,
+    "deterministic": true,
+    "plots": true,
+    "data": "<repo>/data/yolo/v2/data.yaml",
+    "seed": 0,
+    "project": "<repo>/runs/detect",
+    "name": "exp6_yolo11n_v2_640_30ep_cls1"
+  },
+  "dataset_counts": {
+    "train": 5412,
+    "val": 681,
+    "test": 679
+  },
+  "env": {
+    "python": "3.12.3",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.39",
+    "packages": {
+      "torch": "2.15.0",
+      "torchvision": "0.29.2",
+      "ultralytics": "8.4.216",
+      "numpy": "2.5.5",
+      "opencv-python": "5.1.0.95",
+      "PyYAML": "6.0.4"
+    },
+    "cuda": "13.2",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "git_commit": "a22052bbaaca94dfffad8419306adfd0d09ee51a",
+    "git_dirty": true
+  },
+  "train_minutes": 15.4,
+  "epochs_ran": 30,
+  "best_epoch": 29,
+  "early_stopped": false,
+  "weights": "<repo>/runs/detect/exp6_yolo11n_v2_640_30ep_cls1/weights/best.pt",
+  "mlflow_run_id": "369051d5aa4343699bfe03ad159a098a"
+}
