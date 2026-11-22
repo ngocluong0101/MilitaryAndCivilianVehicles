@@ -22,21 +22,18 @@ flowchart LR
     G --> I[serve<br/>API + demo + Docker]
 ```
 
-## Dành cho nhà tuyển dụng: điểm nổi bật
+## Điểm nổi bật
 
-- **Phát hiện lỗi dữ liệu khiến kết quả bị "thổi phồng".** Bằng kỹ thuật so khớp ảnh (perceptual hash),
-  project phát hiện **71,7% ảnh trong dataset có bản trùng hoặc gần trùng**, và **64,9% ảnh dùng để kiểm tra
-  của cách chia gốc có bản sao trong tập huấn luyện** — tức là độ chính xác đo được bị cao ảo. Dữ liệu được
-  chia lại sao cho không còn ảnh trùng nào nằm ở hai tập khác nhau.
-- **Quy trình đánh giá nghiêm ngặt.** Tập test bị khoá trong code (chỉ chạy được một lần, cần cờ `--final`);
-  mọi lựa chọn model đều dựa trên tập kiểm định. Mỗi thí nghiệm chỉ đổi đúng một yếu tố để so sánh công bằng,
-  được ghi lại bằng MLflow.
-- **Kết quả cuối trên tập test độc lập:** mAP50-95 **0,531**, mAP50 **0,844** (679 ảnh).
-- **Tối ưu tốc độ:** sau khi export sang TensorRT FP16, thời gian xử lý một ảnh giảm khoảng **4 lần** so với
-  PyTorch FP32 mà độ chính xác gần như không đổi.
-- **Triển khai được:** API FastAPI, demo Gradio, Docker (CPU), **124 bài kiểm thử tự động** chạy trên CI.
-- **Trung thực về giới hạn:** các thí nghiệm không thành công, các lỗi đo đạc và hạn chế của dữ liệu đều được
-  ghi lại trong thư mục [reports/](reports/) thay vì bỏ qua.
+Phần lớn dự án học máy dừng ở việc "huấn luyện ra một con số". Dự án này tập trung vào những chỗ thường bị bỏ qua
+nhưng quyết định kết quả có đáng tin hay không:
+
+| Khía cạnh | Vấn đề thường gặp | Dự án này làm gì | Kết quả |
+|---|---|---|---|
+| **Dữ liệu** | Ảnh giống nhau nằm ở cả tập huấn luyện và tập kiểm tra khiến điểm số cao ảo | Dò ảnh trùng bằng perceptual hash, chia lại dữ liệu theo từng nhóm ảnh trùng | **71,7%** ảnh có bản trùng; **64,9%** ảnh kiểm tra của cách chia gốc có bản sao trong tập huấn luyện; sau khi chia lại: 0 nhóm bị tách |
+| **Đánh giá** | Chọn model trên tập test làm số cuối bị lạc quan | Khoá tập test trong code (chỉ chạy một lần); mỗi thí nghiệm chỉ đổi một yếu tố, lưu bằng MLflow | mAP50-95 **0,531** trên 679 ảnh test độc lập |
+| **Tốc độ** | Model chính xác nhưng quá chậm để dùng | Export ONNX/TensorRT, đo độ trễ, thông lượng, VRAM và độ chính xác của từng định dạng | TensorRT FP16 nhanh **≈ 4 lần** PyTorch FP32 (4,82 → 1,11 ms/ảnh), độ chính xác gần như không đổi |
+| **Triển khai** | Model chỉ nằm trong notebook | API FastAPI, demo Gradio, Docker CPU (~760 MB), kiểm thử tự động chạy trên CI | **124** bài kiểm thử; chạy được cả trên CPU |
+| **Trung thực** | Chỉ công bố kết quả đẹp | Ghi lại cả thí nghiệm không cải thiện và các lỗi đo đạc đã sửa | Toàn bộ trong [reports/](reports/) |
 
 ## Kết quả
 
