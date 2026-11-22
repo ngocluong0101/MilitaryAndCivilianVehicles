@@ -119,7 +119,31 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sp.add_argument("--final", action="store_true", help="Xác nhận dùng tập test cho báo cáo cuối")
     sp.add_argument("--only", nargs="+", help="Chỉ đo các định dạng này (vd: onnx_fp32)")
+    sp.add_argument("--map-batch", type=int, default=8, help="Batch khi đo mAP")
+    sp.add_argument(
+        "--repeats",
+        type=int,
+        default=3,
+        help="Số vòng đo lặp (xen kẽ các định dạng); báo cáo trung vị và khoảng min–max",
+    )
+    sp.add_argument(
+        "--no-isolate",
+        action="store_true",
+        help="Đo mọi định dạng trong một tiến trình (VRAM sẽ lẫn giữa các định dạng)",
+    )
+    sp.add_argument(
+        "--row-out", help=argparse.SUPPRESS
+    )  # nội bộ: tiến trình con ghi một dòng kết quả
     sp.add_argument("--roadmap", help="Cập nhật bảng benchmark trong file này (ROADMAP.md)")
+
+    sp = sub.add_parser("analyze-errors", help="Phân tích lỗi trên VAL -> reports/error_analysis/")
+    add_data_root(sp)
+    sp.add_argument("--weights", required=True)
+    sp.add_argument("--split", default="v2")
+    sp.add_argument("--conf", type=float, default=0.25, help="Ngưỡng điểm khi phân tích lỗi")
+    sp.add_argument("--imgsz", type=int, default=640)
+    sp.add_argument("--device", default=None)
+    sp.add_argument("--out", default=None, help="Thư mục xuất (mặc định reports/error_analysis)")
 
     def add_model_args(sp: argparse.ArgumentParser) -> None:
         sp.add_argument("--model", required=True, help="File .onnx hoặc .engine")
@@ -253,9 +277,15 @@ def main(argv: list[str] | None = None) -> int:
             args.iters,
             None if args.map_part == "none" else args.map_part,
             args.final,
+            map_batch=args.map_batch,
             only=args.only,
             data_root=args.data_root,
+            isolate=not args.no_isolate,
+            row_out=Path(args.row_out) if args.row_out else None,
+            repeats=args.repeats,
         )
+        if args.row_out:
+            return 0
         table = render_benchmark_table(rows)
         print(table)
         if args.roadmap:
@@ -266,6 +296,14 @@ def main(argv: list[str] | None = None) -> int:
                 ),
                 encoding="utf-8",
             )
+    elif args.command == "analyze-errors":
+        from vehicledet.error_analysis import run_error_analysis
+
+        kwargs = {"out_dir": Path(args.out)} if args.out else {}
+        summary = run_error_analysis(
+            args.weights, args.split, args.conf, args.imgsz, args.device, args.data_root, **kwargs
+        )
+        print(json.dumps(summary["counts"], ensure_ascii=False, indent=1))
     elif args.command == "serve":
         import os
 

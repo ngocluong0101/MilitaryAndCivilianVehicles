@@ -210,6 +210,8 @@ class OnnxDetector:
         want_cuda = device in ("auto", "cuda", "0") and "CUDAExecutionProvider" in available
         if device in ("cuda", "0") and not want_cuda:
             log.warning("Yêu cầu GPU nhưng onnxruntime không có CUDAExecutionProvider; dùng CPU")
+        if want_cuda and hasattr(ort, "preload_dlls"):
+            ort.preload_dlls()  # nạp CUDA/cuDNN cài bằng pip (nvidia-*) trước khi tạo session
         providers = (["CUDAExecutionProvider"] if want_cuda else []) + ["CPUExecutionProvider"]
         self.session = ort.InferenceSession(str(model_path), providers=providers)
         self.providers = self.session.get_providers()

@@ -15,7 +15,11 @@ import json
 import logging
 import os
 import platform
+import statistics
 import subprocess
+import sys
+import tempfile
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -56,7 +60,10 @@ CSV_FIELDS = [
     "precision",
     "device",
     "status",
+    "repeats",
     "latency_b1_p50_ms",
+    "latency_b1_p50_min_ms",
+    "latency_b1_p50_max_ms",
     "latency_b1_p95_ms",
     "e2e_b1_p50_ms",
     "e2e_b1_p95_ms",
@@ -64,7 +71,11 @@ CSV_FIELDS = [
     "throughput_b4",
     "throughput_b8",
     "throughput_b16",
+    "throughput_b16_min",
+    "throughput_b16_max",
     "vram_mb",
+    "sm_clock_mhz_median",
+    "sm_clock_mhz_max",
     "mAP50",
     "mAP50-95",
     "map_part",
@@ -123,6 +134,101 @@ def process_gpu_memory_mb(pid: int | None = None) -> float | None:
     return parse_gpu_memory(out, pid or os.getpid())
 
 
+def _ort_session_providers(path: Path) -> list[str]:
+    """Provider mà một session ONNX Runtime THỰC SỰ dùng (không chỉ provider được biên dịch sẵn).
+
+    ONNX Runtime lặng lẽ rơi về CPU nếu không nạp được thư viện CUDA, nên phải tạo session thật để
+    kiểm tra; `preload_dlls()` nạp CUDA/cuDNN cài bằng pip (gói nvidia-*) trước khi tạo session.
+    """
+    import onnxruntime as ort
+
+    if hasattr(ort, "preload_dlls"):
+        ort.preload_dlls()
+    sess = ort.InferenceSession(
+        str(path), providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
+    )
+    return sess.get_providers()
+
+
+class ClockSampler:
+    """Lấy mẫu xung nhịp SM của GPU (NVML) khi đo; GPU laptop đổi xung theo tải/nhiệt/công suất.
+
+    Không có NVML/GPU thì không ghi gì (stats() trả về None)."""
+
+    def __init__(self, interval: float = 0.1):
+        self.interval, self.samples = interval, []
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def _run(self) -> None:
+        try:
+            import pynvml
+
+            pynvml.nvmlInit()
+            handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+            while not self._stop.is_set():
+                self.samples.append(pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_SM))
+                time.sleep(self.interval)
+        except Exception:  # noqa: BLE001 - không có NVML: bỏ qua
+            return
+
+    def __enter__(self) -> ClockSampler:
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=2)
+
+    def stats(self) -> dict | None:
+        if not self.samples:
+            return None
+        return {"median": statistics.median(self.samples), "max": max(self.samples)}
+
+
+_MEDIAN_FIELDS = (
+    "latency_b1_p50_ms",
+    "latency_b1_p95_ms",
+    "e2e_b1_p50_ms",
+    "e2e_b1_p95_ms",
+    "throughput_b1",
+    "throughput_b4",
+    "throughput_b8",
+    "throughput_b16",
+    "vram_mb",
+    "sm_clock_mhz_median",
+)
+
+
+def aggregate_rows(rows: list[dict]) -> dict:
+    """Gộp nhiều lần đo (vòng lặp) của cùng một định dạng: trung vị + khoảng min–max.
+
+    Lần đo không thành công bị bỏ qua; nếu không lần nào thành công thì trả về dòng đầu tiên.
+    mAP và map_part lấy từ lần đo đầu tiên có giá trị.
+    """
+    ok = [r for r in rows if r["status"] == "đã đo"]
+    if not ok:
+        return rows[0]
+    out = dict(ok[0])
+    out["repeats"] = len(ok)
+    for f in _MEDIAN_FIELDS:
+        vals = [float(r[f]) for r in ok if r.get(f) not in ("", None)]
+        out[f] = round(statistics.median(vals), 3) if vals else ""
+    p50 = [float(r["latency_b1_p50_ms"]) for r in ok]
+    thr = [float(r["throughput_b16"]) for r in ok]
+    out["latency_b1_p50_min_ms"], out["latency_b1_p50_max_ms"] = min(p50), max(p50)
+    out["throughput_b16_min"], out["throughput_b16_max"] = min(thr), max(thr)
+    clocks = [
+        float(r["sm_clock_mhz_max"]) for r in ok if r.get("sm_clock_mhz_max") not in ("", None)
+    ]
+    out["sm_clock_mhz_max"] = max(clocks) if clocks else ""
+    for f in ("mAP50", "mAP50-95", "map_part"):
+        out[f] = next((r[f] for r in ok if r.get(f) not in ("", None)), "")
+    return out
+
+
 def check_available(spec: FormatSpec, path: Path, device: str) -> str | None:
     """None nếu đo được; ngược lại trả lý do 'chưa đo'."""
     on_cuda = device != "cpu"
@@ -139,15 +245,14 @@ def check_available(spec: FormatSpec, path: Path, device: str) -> str | None:
             return "chưa cài tensorrt (xem docs/TENSORRT_SETUP.md)"
     if spec.kind == "onnx" and on_cuda:
         try:
-            import onnxruntime as ort
-
-            if "CUDAExecutionProvider" not in ort.get_available_providers():
-                return (
-                    "onnxruntime chưa có CUDAExecutionProvider (cần onnxruntime-gpu; "
-                    f"hiện có {ort.get_available_providers()})"
-                )
-        except ImportError:
-            return "chưa cài onnxruntime"
+            providers = _ort_session_providers(path)
+        except Exception as e:  # noqa: BLE001
+            return f"không tạo được session ONNX Runtime: {type(e).__name__}: {e}"[:300]
+        if "CUDAExecutionProvider" not in providers:
+            return (
+                "ONNX Runtime không nạp được CUDAExecutionProvider (session chỉ dùng "
+                f"{providers}; thiếu thư viện CUDA/cuDNN khớp với onnxruntime-gpu?)"
+            )
     return None
 
 
@@ -195,8 +300,26 @@ def env_report(imgsz: int, device: str, warmup: int, iters: int) -> dict:
 # ----- đo thật ------------------------------------------------------------------------------
 
 
-def load_sample_images(data_root: Path, split: str, n: int = 16) -> list[np.ndarray]:
-    """n ảnh BGR đầu tiên của tập VAL (chỉ để đo thời gian, không dùng nhãn)."""
+def letterbox_square(img: np.ndarray, size: int) -> np.ndarray:
+    """Resize giữ tỉ lệ rồi đệm xám cho vuông size×size (ảnh BGR)."""
+    import cv2
+
+    h, w = img.shape[:2]
+    r = min(size / h, size / w)
+    new_w, new_h = max(1, round(w * r)), max(1, round(h * r))
+    resized = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
+    canvas = np.full((size, size, 3), 114, dtype=np.uint8)
+    top, left = (size - new_h) // 2, (size - new_w) // 2
+    canvas[top : top + new_h, left : left + new_w] = resized
+    return canvas
+
+
+def load_sample_images(data_root: Path, split: str, n: int = 16, imgsz: int = 640):
+    """n ảnh BGR đầu tiên của tập VAL, đã letterbox về đúng imgsz×imgsz (chỉ để đo thời gian).
+
+    Dùng một kích thước cố định để model đầu vào động (ONNX/TensorRT) không phải tối ưu lại theo
+    từng hình dạng ảnh, nhờ vậy mọi định dạng được đo trên cùng input 1×3×imgsz×imgsz.
+    """
     import cv2
 
     root = build_yolo_dataset(data_root, split).data_yaml.parent / "images" / "val"
@@ -204,7 +327,7 @@ def load_sample_images(data_root: Path, split: str, n: int = 16) -> list[np.ndar
     for name in read_split(split)["val"][:n]:
         img = cv2.imread(str(root / name))
         if img is not None:
-            images.append(img)
+            images.append(letterbox_square(img, imgsz))
     if len(images) < max(BATCHES):
         raise RuntimeError(f"Chỉ đọc được {len(images)} ảnh mẫu, cần {max(BATCHES)}")
     return images
@@ -222,10 +345,13 @@ def measure(model, images, imgsz, device, quantize, warmup: int, iters: int) -> 
     vram = []
     sample = lambda: vram.append(process_gpu_memory_mb()) if device != "cpu" else None  # noqa: E731
 
-    for _ in range(warmup):
-        _predict(model, images[:1], imgsz, device, quantize)
+    for i in range(warmup):
+        j = i % len(images)
+        _predict(model, images[j : j + 1], imgsz, device, quantize)
     sample()
 
+    sampler = ClockSampler()
+    sampler.__enter__()
     infer_ms, e2e_ms = [], []
     for i in range(iters):
         t = time.perf_counter()
@@ -252,6 +378,8 @@ def measure(model, images, imgsz, device, quantize, warmup: int, iters: int) -> 
             walls.append((time.perf_counter() - t) * 1000)
         out["throughput"][b] = throughput(b, walls)
         sample()
+    sampler.__exit__(None, None, None)
+    out["clock"] = sampler.stats()
     vram = [v for v in vram if v is not None]
     out["vram_mb"] = max(vram) if vram else None
     return out
@@ -302,6 +430,13 @@ def benchmark_format(
             e2e_b1_p50_ms=round(m["e2e_b1"]["p50"], 3),
             e2e_b1_p95_ms=round(m["e2e_b1"]["p95"], 3),
             vram_mb=m["vram_mb"] if m["vram_mb"] is not None else "",
+            sm_clock_mhz_median=m["clock"]["median"] if m.get("clock") else "",
+            sm_clock_mhz_max=m["clock"]["max"] if m.get("clock") else "",
+            repeats=1,
+            latency_b1_p50_min_ms=round(m["latency_b1"]["p50"], 3),
+            latency_b1_p50_max_ms=round(m["latency_b1"]["p50"], 3),
+            throughput_b16_min=round(m["throughput"][16], 2),
+            throughput_b16_max=round(m["throughput"][16], 2),
             file_mb=round(path.stat().st_size / 2**20, 2),
             **{f"throughput_b{b}": round(v, 2) for b, v in m["throughput"].items()},
         )
@@ -319,6 +454,63 @@ def benchmark_format(
     return row
 
 
+def _run_isolated(
+    spec: FormatSpec,
+    model_dir: Path,
+    split: str,
+    device: str,
+    imgsz: int,
+    warmup: int,
+    iters: int,
+    map_part: str | None,
+    final: bool,
+    map_batch: int,
+    data_root: str | None,
+) -> dict:
+    """Đo MỘT định dạng trong tiến trình riêng để VRAM và cache CUDA không lẫn từ định dạng khác."""
+    with tempfile.TemporaryDirectory() as tmp:
+        row_file = Path(tmp) / "row.json"
+        cmd = [
+            sys.executable,
+            "-m",
+            "vehicledet",
+            "benchmark",
+            "--model-dir",
+            str(model_dir),
+            "--split",
+            split,
+            "--device",
+            device,
+            "--imgsz",
+            str(imgsz),
+            "--warmup",
+            str(warmup),
+            "--iters",
+            str(iters),
+            "--map-part",
+            map_part or "none",
+            "--map-batch",
+            str(map_batch),
+            "--only",
+            spec.key,
+            "--row-out",
+            str(row_file),
+        ]
+        if final:
+            cmd.append("--final")
+        if data_root:
+            cmd += ["--data-root", str(data_root)]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if row_file.exists():
+            return json.loads(row_file.read_text(encoding="utf-8"))
+        tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-1:]
+        return {
+            **empty_row(spec, device, ""),
+            "status": "lỗi",
+            "note": f"tiến trình con thoát mã {proc.returncode}: {' '.join(tail)}"[:300],
+        }
+
+
 def run_benchmark(
     model_dir: str | Path,
     split: str,
@@ -332,36 +524,76 @@ def run_benchmark(
     only: list[str] | None = None,
     data_root: str | None = None,
     out_dir: Path = REPORTS_DIR,
+    isolate: bool = True,
+    row_out: Path | None = None,
+    repeats: int = 3,
 ) -> list[dict]:
-    """Chạy benchmark mọi định dạng trong model_dir; ghi reports/benchmark.csv + benchmark.json."""
+    """Chạy benchmark mọi định dạng trong model_dir; ghi reports/benchmark.csv + benchmark.json.
+
+    isolate=True (mặc định): mỗi lần đo của mỗi định dạng chạy trong một tiến trình riêng, nên VRAM
+    là của riêng định dạng đó. Đo lặp `repeats` vòng xen kẽ các định dạng (round-robin) để trôi xung
+    nhịp GPU không dồn vào một định dạng; báo cáo trung vị và khoảng min–max. mAP chỉ đo ở vòng đầu.
+    `row_out` (nội bộ, cho tiến trình con): chỉ ghi dòng kết quả ra file.
+    """
     if map_part == "test" and not final:
         raise PermissionError(
             "mAP trên tập test chỉ dùng cho báo cáo cuối: thêm --final khi đã chốt model bằng val."
         )
-    root = resolve_data_root(data_root)
+    specs = [s for s in SPECS if not only or s.key in only]
     model_dir = Path(model_dir)
-    images = load_sample_images(root, split)
-    data_yaml = build_yolo_dataset(root, split).data_yaml
-
     rows = []
-    for spec in SPECS:
-        if only and spec.key not in only:
-            continue
-        log.info("Benchmark %s %s ...", spec.label, spec.precision)
-        rows.append(
-            benchmark_format(
-                spec,
-                model_dir / spec.filename,
-                images,
-                imgsz,
-                device,
-                warmup,
-                iters,
-                data_yaml,
-                map_part,
-                map_batch,
+    raw_rounds: dict[str, list[dict]] = {}
+    if isolate and row_out is None and len(specs) > 1:
+        per_spec: dict[str, list[dict]] = {spec.key: [] for spec in specs}
+        for rnd in range(max(1, repeats)):
+            for spec in specs:
+                log.info(
+                    "Benchmark %s %s (vòng %d, tiến trình riêng) ...",
+                    spec.label,
+                    spec.precision,
+                    rnd + 1,
+                )
+                per_spec[spec.key].append(
+                    _run_isolated(
+                        spec,
+                        model_dir,
+                        split,
+                        device,
+                        imgsz,
+                        warmup,
+                        iters,
+                        map_part if rnd == 0 else None,
+                        final,
+                        map_batch,
+                        data_root,
+                    )
+                )
+        rows = [aggregate_rows(per_spec[spec.key]) for spec in specs]
+        raw_rounds = per_spec
+    else:
+        root = resolve_data_root(data_root)
+        images = load_sample_images(root, split, imgsz=imgsz)
+        data_yaml = build_yolo_dataset(root, split).data_yaml
+        for spec in specs:
+            log.info("Benchmark %s %s ...", spec.label, spec.precision)
+            rows.append(
+                benchmark_format(
+                    spec,
+                    model_dir / spec.filename,
+                    images,
+                    imgsz,
+                    device,
+                    warmup,
+                    iters,
+                    data_yaml,
+                    map_part,
+                    map_batch,
+                )
             )
-        )
+
+    if row_out is not None:
+        row_out.write_text(json.dumps(rows[0], ensure_ascii=False), encoding="utf-8")
+        return rows
 
     out_dir.mkdir(parents=True, exist_ok=True)
     with open(out_dir / "benchmark.csv", "w", newline="", encoding="utf-8") as f:
@@ -375,7 +607,10 @@ def run_benchmark(
                 "model_dir": portable(str(model_dir)),
                 "split": split,
                 "map_part": map_part,
+                "isolated_processes": isolate,
+                "repeats": repeats,
                 "rows": rows,
+                "rounds": raw_rounds,
             },
             indent=2,
             ensure_ascii=False,
@@ -388,8 +623,9 @@ def run_benchmark(
 
 def render_benchmark_table(rows: list[dict]) -> str:
     head = (
-        "| Định dạng | Precision | Latency p50 (ms) | p95 (ms) | Throughput b16 (img/s) | "
-        "VRAM (MB) | mAP50-95 | Ghi chú |\n|---|---|---|---|---|---|---|---|\n"
+        "| Định dạng | Precision | Latency p50 (ms): trung vị [min–max] | Throughput b16 (img/s): "
+        "trung vị [min–max] | VRAM (MB) | mAP50-95 | SM MHz (trung vị) | Ghi chú |\n"
+        "|---|---|---|---|---|---|---|---|\n"
     )
     if not rows:
         return head + "| chưa đo | | | | | | | |\n"
@@ -400,9 +636,12 @@ def render_benchmark_table(rows: list[dict]) -> str:
             continue
         part = f" ({r['map_part']})" if r["map_part"] else ""
         map_cell = f"{r['mAP50-95']}{part}" if r["mAP50-95"] != "" else "chưa đo"
+        lat = (
+            f"{r['latency_b1_p50_ms']} [{r['latency_b1_p50_min_ms']}–{r['latency_b1_p50_max_ms']}]"
+        )
+        thr = f"{r['throughput_b16']} [{r['throughput_b16_min']}–{r['throughput_b16_max']}]"
         lines.append(
-            f"| {r['format']} | {r['precision']} | {r['latency_b1_p50_ms']} | "
-            f"{r['latency_b1_p95_ms']} | {r['throughput_b16']} | "
-            f"{r['vram_mb'] or 'n/a'} | {map_cell} | |"
+            f"| {r['format']} | {r['precision']} | {lat} | {thr} | {r['vram_mb'] or 'n/a'} | "
+            f"{map_cell} | {r['sm_clock_mhz_median'] or 'n/a'} | n={r['repeats']} vòng |"
         )
     return head + "\n".join(lines) + "\n"
