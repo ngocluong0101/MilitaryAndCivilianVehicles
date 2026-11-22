@@ -1,6 +1,6 @@
 # ROADMAP – Nâng cấp Military & Civilian Vehicle Detection
 
-Trạng thái: code/tài liệu Phase 3, 5, 6, 7 đã xong; **chờ chạy train** để có số liệu thật · Cập nhật: 2026-11-22
+Trạng thái: Phase 0–6 đã xong có số liệu thật; Phase 7 còn GIF demo và xác nhận CI xanh sau khi push · Cập nhật: 2026-11-22
 
 ## Tiến độ
 | Phase | Nội dung | Trạng thái |
@@ -8,11 +8,11 @@ Trạng thái: code/tài liệu Phase 3, 5, 6, 7 đã xong; **chờ chạy train
 | 0 | Khảo sát & ROADMAP | ✅ |
 | 1 | Dọn repo & cấu trúc lại | ✅ |
 | 2 | Kiểm tra dữ liệu & chia lại tập | ✅ |
-| 3 | Train & thí nghiệm | 🟨 code xong, chưa chạy train |
-| 4 | Phân tích lỗi | ⬜ |
-| 5 | Export & benchmark RTX 4060 | 🟨 code xong, chưa đo |
-| 6 | API, Docker & demo Gradio | 🟨 code xong, chưa thử với model đã train |
-| 7 | Hoàn thiện & bullet CV | 🟨 tài liệu/CI xong, chờ số liệu thật |
+| 3 | Train & thí nghiệm | ✅ |
+| 4 | Phân tích lỗi | ✅ |
+| 5 | Export & benchmark RTX 4060 | ✅ |
+| 6 | API, Docker & demo Gradio | ✅ |
+| 7 | Hoàn thiện & bullet CV | 🟨 tài liệu/CI xong; còn GIF demo, push + CI xanh |
 
 ## Hiện trạng (khảo sát Phase 0)
 
@@ -130,22 +130,25 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - [x] **Đã chạy** thí nghiệm 1, 2, 3a, 3b trên val (15 epoch, tổng ~69 phút gồm nghỉ; bảng ở mục Số liệu). **Thí nghiệm 4 (imgsz 960) chưa chạy** – tuỳ chọn, laptop
 - [ ] (5) Xử lý mất cân bằng lớp – *chưa cần theo audit (xem Quyết định 2026-11-22); chỉ làm nếu AP từng lớp cho thấy*
 - [x] Chốt số epoch/early stopping: **15 epoch, patience 8, close_mosaic 5** (laptop nên giảm tải nhiệt; 2026-11-22). Thời gian train thực tế vẫn cần ghi khi chạy
-- [ ] Chạy model được chọn **một lần** trên test → `reports/test_results.json` (*chờ xác nhận model cuối; xem Quyết định 2026-11-22*)
-- [ ] Dừng và báo cáo
+- [x] Thí nghiệm phụ exp3c (YOLO11n 30 epoch, chỉ đổi số epoch) vì mọi lượt 15 epoch chưa hội tụ; chọn model cuối bằng val = **exp3c** (0,480)
+- [x] Chạy model được chọn **một lần** trên test → `reports/test_results.json`: mAP50 **0,844**, mAP50-95 **0,531** (679 ảnh)
+- [x] Dừng và báo cáo
 
 ### Phase 4 – Phân tích lỗi
-- [ ] Gom lỗi theo nhóm (nhầm lớp, bỏ sót nhỏ/che/chồng, phát hiện thừa, nhãn sai)
-- [ ] Gallery + `reports/error_analysis/error_analysis.md`
-- [ ] Đề xuất & thử 1 cách khắc phục, đo lại trên val
-- [ ] Dừng và báo cáo
+- [x] Gom lỗi theo nhóm trên **val** của model cuối: nhầm lớp, bỏ sót (nhỏ / bị che / ảnh nhiều vật thể), phát hiện thừa, trùng lặp, định vị sai, nhãn đáng ngờ (`python -m vehicledet analyze-errors`, có test)
+- [x] Gallery + `reports/error_analysis/error_analysis.md` (+ json, 9 ảnh ghép nhỏ)
+- [x] Nhãn đáng ngờ: 12 ca được ghi nhận, **không sửa nhãn nào**
+- [x] Đã thử 1 cách khắc phục (exp6: `cls` 0,5 → 1,0) và đo lại trên val: **không cải thiện** (mAP50-95 0,469 vs 0,480; nhầm lớp 79 vs 76; xem `reports/error_analysis/remedy_comparison.md`)
+- [x] Đề xuất cách khác chưa thử: imgsz 960; bổ sung/rà soát nhãn (cần bạn đồng ý)
+- [x] Dừng và báo cáo
 
 ### Phase 5 – Export & benchmark trên RTX 4060
-- [x] Code export ONNX / TensorRT FP16 / TensorRT INT8 (`python -m vehicledet export`); INT8 hiệu chuẩn bằng 500 ảnh **train** (seed 0, có test chứng minh không lẫn val/test)
-- [x] `benchmark.py`: PyTorch FP32/FP16, ONNX Runtime, TensorRT FP16/INT8 – latency p50/p95 batch 1, throughput batch 1/4/8/16, VRAM của riêng tiến trình (nvidia-smi), mAP50-95 (val; test cần `--final`)
-- [x] Warm-up 20 lần, 200 lần lặp; ghi phiên bản driver/CUDA/TensorRT/ONNX Runtime và kích thước input vào `reports/benchmark.json`
-- [x] Hướng dẫn cài TensorRT/onnxruntime-gpu (`docs/TENSORRT_SETUP.md`); định dạng không chạy được ghi "chưa đo" kèm lý do
-- [ ] **Chạy** export + benchmark với model đã chọn – *chưa chạy: chưa có model train xong; TensorRT và onnxruntime-gpu chưa cài*
-- [ ] Dừng và báo cáo (kèm bảng tốc độ vs độ chính xác)
+- [x] Export ONNX / TensorRT FP16 / TensorRT INT8 cho model cuối exp3c (`python -m vehicledet export`); INT8 hiệu chuẩn bằng 500 ảnh **train** (đã kiểm: 500/500 ảnh thuộc train)
+- [x] `benchmark.py`: PyTorch FP32/FP16, ONNX Runtime GPU, TensorRT FP16/INT8 – latency p50/p95, throughput b1/4/8/16, VRAM của riêng tiến trình, mAP50-95 trên **test**; đo lặp 3 vòng xen kẽ, mỗi lần một tiến trình riêng, ghi xung SM (NVML)
+- [x] Warm-up 20 lần, 200 lần lặp; ghi phiên bản driver/CUDA/TensorRT/ONNX Runtime và input vào `reports/benchmark.json`
+- [x] Cài TensorRT 10.16.1.11 (cu13) và onnxruntime-gpu 1.32.0; hướng dẫn `docs/TENSORRT_SETUP.md`
+- [x] **Đã chạy** export + benchmark thật; bảng cuối ở mục Số liệu (nguồn `reports/benchmark.csv`, `reports/benchmark_runs/`)
+- [x] Dừng và báo cáo (bảng tốc độ vs độ chính xác)
 
 ### Phase 6 – Phục vụ model & demo
 - [x] FastAPI: `POST /predict` (ngưỡng `conf`/`iou`, giới hạn kích thước, lỗi 400/413/422/500/503 rõ ràng), `GET /health`; backend ONNX Runtime (mặc định, CPU) hoặc TensorRT
@@ -153,11 +156,11 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - [x] Demo Gradio gọi lại cùng `Detector.predict` với API (không viết hai lần)
 - [x] (Tuỳ chọn) Hướng dẫn Hugging Face Spaces (`docs/HF_SPACES.md`, chưa triển khai thật)
 - [x] Test API bằng `TestClient` với detector stub + model ONNX giả dựng bằng `onnx.helper` (không cần weights thật)
-- [ ] Chạy thử với model đã train của project (hiện mới thử với yolo11n COCO để kiểm tra cơ chế) và đo `scripts/check_serve_parity.py`
-- [ ] Dừng và báo cáo
+- [x] Chạy thử với model đã train của project (exp3c): API trên ONNX Runtime GPU và Docker CPU trả kết quả giống nhau; `scripts/check_serve_parity.py` → `reports/serve_parity.json` (bbox điểm ≥ 0,6: 100% khớp IoU > 0,5, 96% khớp IoU > 0,9 trên 99 bbox)
+- [x] Dừng và báo cáo
 
 ### Phase 7 – Hoàn thiện & tổng kết
-- [x] GitHub Actions (`.github/workflows/ci.yml`): ruff + pytest trên CPU, không cần dataset/GPU/torch (`requirements-ci.txt`). Đã kiểm chứng tương đương trong venv sạch (107 test pass, ruff sạch); **chưa chạy trên GitHub** nên chưa biết badge xanh hay chưa
+- [x] GitHub Actions (`.github/workflows/ci.yml`): ruff + pytest trên CPU, không cần dataset/GPU/torch (`requirements-ci.txt`). Đã kiểm chứng tương đương trong venv sạch (124 test pass, ruff sạch); **chưa chạy trên GitHub** nên chưa biết badge xanh hay chưa
 - [x] `MODEL_CARD.md` (khung): mục đích, dữ liệu, giới hạn, sử dụng có trách nhiệm, license; các mục kết quả/AP theo lớp/lớp hay nhầm ghi "chưa đo"/"chưa phân tích"
 - [x] README viết lại: bài toán, sơ đồ Mermaid, bảng dữ liệu (đã đo), cách tái lập từng bước; bảng test/benchmark/confusion matrix/GIF ghi "chưa đo/chưa có"
 - [x] Hướng dẫn quay GIF demo (`docs/DEMO_RECORDING.md`)
@@ -193,15 +196,22 @@ Sinh tự động từ `reports/experiments/*/` bằng `python scripts/summarize
 | exp2_yolov5su_v2_640 | yolov5su | v2 (val) | 640 | 0.755 | 0.459 | civilian aircraft (0.380) | 14 phút | 15 | `adebc1d7` |
 | exp3a_yolo11n_v2_640 | yolo11n | v2 (val) | 640 | 0.771 | 0.468 | civilian aircraft (0.402) | 9.0 phút | 15 | `ea2b6a7e` |
 | exp3b_yolo11s_v2_640 | yolo11s | v2 (val) | 640 | 0.770 | 0.465 | civilian aircraft (0.383) | 15 phút | 15 | `96484233` |
+| exp3c_yolo11n_v2_640_30ep | yolo11n | v2 (val) | 640 | 0.788 | 0.480 | civilian aircraft (0.422) | 15 phút | 30 | `dd0d8145` |
+| exp6_yolo11n_v2_640_30ep_cls1 | yolo11n | v2 (val) | 640 | 0.781 | 0.469 | civilian aircraft (0.401) | 15 phút | 30 | `369051d5` |
+| TEST: exp3c_yolo11n_v2_640_30ep | yolo11n | v2 (test) | 640 | 0.844 | 0.531 | military aircraft (0.430) | 15 phút | 30 | `dd0d8145` |
 <!-- EXPERIMENTS:END -->
 
 ### Benchmark (RTX 4060 Laptop 8 GB, input 1×3×640×640 letterbox)
-Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadmap ROADMAP.md`. Latency = thời gian model (`speed['inference']` của Ultralytics) cho 1 ảnh, batch 1; throughput = ảnh/giây của cả lời gọi predict (gồm tiền/hậu xử lý). Định dạng không chạy được trên máy ghi "chưa đo" kèm lý do.
+Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadmap ROADMAP.md` (trung vị 3 vòng đo, [min–max]; mỗi lần đo một tiến trình riêng). Latency = thời gian model (`speed['inference']` của Ultralytics) cho 1 ảnh, batch 1; throughput = ảnh/giây của cả lời gọi predict (gồm tiền/hậu xử lý). Định dạng không chạy được trên máy ghi "chưa đo" kèm lý do.
 
 <!-- BENCHMARK:START (sinh bởi `python -m vehicledet benchmark --roadmap`) -->
-| Định dạng | Precision | Latency p50 (ms) | p95 (ms) | Throughput b16 (img/s) | VRAM (MB) | mAP50-95 | Ghi chú |
+| Định dạng | Precision | Latency p50 (ms): trung vị [min–max] | Throughput b16 (img/s): trung vị [min–max] | VRAM (MB) | mAP50-95 | SM MHz (trung vị) | Ghi chú |
 |---|---|---|---|---|---|---|---|
-| chưa đo | | | | | | | |
+| PyTorch | FP32 | 4.822 [4.774–6.561] | 308.75 [178.46–309.13] | 672.0 | 0.5323 (test) | 2325.0 | n=3 vòng |
+| PyTorch | FP16 | 5.002 [4.927–5.409] | 471.46 [254.93–477.64] | 532.0 | 0.5319 (test) | 2250.0 | n=3 vòng |
+| ONNX Runtime | FP32 | 3.684 [3.683–8.422] | 158.77 [112.76–159.0] | 1308.0 | 0.5323 (test) | 2460.0 | n=3 vòng |
+| TensorRT | FP16 | 1.11 [1.104–1.207] | 650.83 [633.12–657.58] | 1196.0 | 0.5321 (test) | 2550.0 | n=3 vòng |
+| TensorRT | INT8 | 1.141 [1.141–1.142] | 766.52 [766.34–766.59] | 1056.0 | 0.5228 (test) | 2550.0 | n=3 vòng |
 <!-- BENCHMARK:END -->
 
 ## Quyết định & lý do
@@ -234,15 +244,28 @@ Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadm
 - 2026-11-22: Mọi lượt đều có epoch tốt nhất là epoch 15/15 và mAP50-95 còn tăng ở các epoch cuối (vd YOLO11n: 0,409 → 0,465 trong 5 epoch cuối) ⇒ **chưa hội tụ**, mAP tuyệt đối chắc chắn thấp hơn mức tối đa; so sánh giữa các model vẫn công bằng (cùng ngân sách) nhưng thứ hạng có thể đổi nếu train dài hơn.
 - 2026-11-22: Tác động rò rỉ (ước lượng chiều hướng, **không phải phép đo sạch** vì hai val và hai train khác nhau): exp1 (val cũ, rò rỉ) 0,540 vs exp2 (val v2, sạch) 0,459 mAP50-95, chênh ≈ 0,08; mAP50 0,792 vs 0,755. Lớp giảm nhiều nhất: civilian car (0,687 → 0,450).
 
+- 2026-11-22: Chạy thí nghiệm phụ exp3c (YOLO11n 30 epoch; chỉ đổi số epoch so với exp3a): val mAP50-95 **0,480** (exp3a 0,468; epoch tốt nhất 30/30, 4 epoch cuối 0,464 → 0,478 nên đã khá phẳng). Chọn exp3c làm model cuối theo val rồi **chạy test một lần**: mAP50 0,844, mAP50-95 0,531 (nguồn `reports/test_results.json`). Test cao hơn val ≈ 0,05; coi là dao động giữa hai tập nhỏ (một seed), chưa đo khoảng tin cậy; lớp yếu nhất đổi từ civilian aircraft (val) sang military aircraft (test).
+- 2026-11-22: Phân tích lỗi (val, conf 0,25, IoU 0,5; `reports/error_analysis/`): 830 đúng · 76 nhầm lớp · 87 định vị sai · 27 trùng · 121 thừa · 122 bỏ sót. Nhầm lớp lớn nhất civilian aircraft → military aircraft (28/76). Phần lớn "thừa" là vật thể thật chưa gán nhãn ⇒ nhãn không đầy đủ làm precision bị đánh giá thấp; không tự sửa nhãn.
+- 2026-11-22: Cách khắc phục thử ở exp6: tăng trọng số loss phân loại `cls` 0,5 → 1,0 (chỉ đổi một tham số so với exp3c). Ghi kết quả kể cả khi không cải thiện. Vì test đã chạy một lần cho exp3c, exp6 nếu tốt hơn **chỉ được báo cáo trên val** (không đo lại trên test, tránh vi phạm quy tắc test một lần).
+- 2026-11-22: **Kết quả exp6: không cải thiện** (val mAP50-95 0,469 so với 0,480 của exp3c; precision 0,805 vs 0,760, recall 0,707 vs 0,755; nhầm lớp 79 vs 76; civilian→military aircraft 29 vs 28). Model cuối giữ nguyên exp3c. Chi tiết: `reports/error_analysis/remedy_comparison.md`.
+- 2026-11-22: Cài `tensorrt-cu13` 10.16.1.11 (chọn nhánh 10.x, tránh 11.x chưa chắc tương thích Ultralytics 8.4.216/INT8) và `onnxruntime-gpu` 1.32.0 (thay `onnxruntime` CPU trong `.venv`) cho Phase 5.
+
+- 2026-11-22: **Benchmark thật** (model exp3c, test mAP): TensorRT FP16 p50 batch 1 = 1,11 ms (PyTorch FP32 4,82 ms) với mAP50-95 0,5321 vs 0,5323; INT8 1,14 ms, throughput b16 767 vs 651 img/s (+18%), mAP50-95 **0,5228 (−0,0095)**. Kết luận: FP16 là điểm cân bằng tốt nhất cho model này; INT8 không đáng kể với latency batch 1.
+- 2026-11-22: Ba lỗi đo được sửa trong quá trình benchmark (đều do kiểm tra, không phải do chọn số): (1) ONNX Runtime báo có `CUDAExecutionProvider` nhưng session thật rơi về CPU vì thiếu thư viện CUDA 13 trong đường dẫn → kiểm tra bằng session thật và dùng `ort.preload_dlls()`; (2) ảnh mẫu nhiều kích thước làm model đầu vào động tối ưu lại liên tục → letterbox về đúng 640×640 trước khi đo; (3) VRAM bị lẫn giữa các định dạng trong một tiến trình → mỗi lần đo một tiến trình riêng.
+- 2026-11-22: GPU laptop bị hãm xung (~780 MHz, cờ `0x24`) khi tải nhẹ và lên 2250–2550 MHz khi tải nặng; làm latency TensorRT dao động ~3 lần giữa các lần chạy (FP16 3,2 vs 1,1 ms). Xử lý: đo lặp 3 vòng xen kẽ, ghi xung SM, báo trung vị + [min–max], lưu các lần đo trước ở `reports/benchmark_runs/` (không giấu số).
+
+- 2026-11-22: Phase 6 chạy với model thật exp3c: `GET /health` trả đủ 6 tên lớp lấy từ metadata ONNX; `POST /predict` trên GPU (ONNX Runtime CUDA) và CPU (Docker, image 758 MB, `healthy`) cho cùng kết quả (điểm lệch ≤ 0,001). Độ khớp pipeline tự viết với Ultralytics (`reports/serve_parity.json`, 100 ảnh val): bbox điểm ≥ 0,6 khớp IoU > 0,9 ở 96%, điểm 0,25–0,4 chỉ 67% (lệch do Pillow vs OpenCV resize). **Lần gọi đầu trên GPU chậm (~805 ms)** do khởi tạo/autotune → khi triển khai GPU cần warm-up.
+
 ## Vấn đề còn mở
-- **Chưa chạy test** (cần bạn xác nhận model cuối: đề xuất YOLO11n). Test chỉ chạy một lần.
-- **Mô hình chưa hội tụ ở 15 epoch** (epoch tốt nhất luôn là cuối). Nếu muốn mAP cao hơn: chạy thêm một lượt dài hơn (vd 30 epoch) cho model cuối; ghi rõ là thí nghiệm phụ.
+- Model cuối (exp3c, 30 epoch) có epoch tốt nhất là epoch cuối nhưng đường cong đã khá phẳng; chưa đo khoảng tin cậy, một seed duy nhất.
+- Nhãn dataset không đầy đủ (nhiều vật thể phụ cùng ảnh không có nhãn) → precision/AP đo được thấp hơn chất lượng thật. Sửa nhãn cần bạn đồng ý (chưa làm).
 - Lớp yếu nhất ở cả 4 lượt là **civilian aircraft** (AP50-95 0,38–0,46); ma trận nhầm lẫn gợi ý civilian aircraft hay bị dự đoán thành military aircraft (cần phân tích ở ngưỡng conf thực tế trong bước phân tích lỗi, chưa kết luận).
 - **Toàn bộ kết quả mô hình vẫn "chưa đo"** (train, test, phân tích lỗi, benchmark GPU). README/MODEL_CARD/bullet CV số 4 đang chờ các số này.
 - Workflow CI chưa chạy trên GitHub; phiên bản action (`checkout@v4`, `setup-python@v5`) chưa kiểm chứng bằng một lần chạy thật.
-- `.venv` chưa có TensorRT và onnxruntime-gpu (cần cài tay, xem `docs/TENSORRT_SETUP.md`); tới lúc đó các dòng TensorRT/ONNX-GPU trong benchmark là "chưa đo".
 - `docker/Dockerfile.gpu` chưa build/chạy thử (cần NVIDIA Container Toolkit; Docker trên máy có runtime `nvidia`). Cần chọn base image/onnxruntime-gpu khớp CUDA.
-- Pipeline ONNX của API tiền xử lý hơi khác Ultralytics (Pillow vs OpenCV), điểm tin cậy có thể lệch ~0,04 ở phát hiện chắc chắn; cần đo ảnh hưởng tới mAP với model thật.
+- Số latency phụ thuộc trạng thái xung nhịp GPU laptop (xem Quyết định 2026-11-22); chưa thử khoá xung (`nvidia-smi -lgc` cần quyền root, laptop có thể không hỗ trợ). Bảng chính thức đại diện cho trung vị 3 vòng, không phải "số tuyệt đối".
+- Pipeline ONNX của API tiền xử lý hơi khác Ultralytics (Pillow vs OpenCV): đã đo độ khớp bbox (`reports/serve_parity.json`) nhưng **chưa đo ảnh hưởng tới mAP** của pipeline API.
+- `Dockerfile.gpu` vẫn chưa kiểm thử (Docker có runtime nvidia nhưng chưa build/chạy ảnh GPU).
 - **Cần bạn chạy để hoàn tất việc xoá `myCV/` và `interview.md` khỏi GitHub:** `git push --force origin main` (lịch sử đã viết lại cục bộ; hash các commit từ `update` trở đi đã đổi, hiện tại `main` = `3e82533`). Bản sao lưu trước khi viết lại: `../MilitaryAndCivilianVehicles-pre-filter.bundle` (chứa cả CV và interview.md; xoá sau khi xác nhận ổn). GitHub vẫn có thể giữ commit cũ trong cache/fork/PR; nếu từng lộ thì coi như đã lộ.
 - Cập nhật 2026-11-21: đã xoá `interview.md` khỏi lịch sử (0 tham chiếu `interview`/`myCV` trong mọi commit); cây thư mục của HEAD không đổi.
 - Trang Mendeley ghi 6.642 ảnh dương / 130 ảnh âm / 11.528 đối tượng, trong khi đếm từ file thật là 6.705 / 67 / 10.718 bbox hợp lệ. Chưa rõ lý do (xem `DATASET.md`); project dùng số đếm từ file.

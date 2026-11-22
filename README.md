@@ -10,8 +10,9 @@ Trọng tâm của project là **quy trình phát triển model bài bản**, kh
 lượng dữ liệu → chia tập không rò rỉ → thí nghiệm có đối chứng → phân tích lỗi → export và đo tốc độ →
 phục vụ model. Tiến độ và số liệu chi tiết: [ROADMAP.md](ROADMAP.md).
 
-> **Trạng thái kết quả:** dữ liệu và 4 thí nghiệm train trên val đã có số liệu thật (bên dưới). Kết quả
-> trên tập test, phân tích lỗi và benchmark GPU **chưa chạy** nên các bảng tương ứng ghi "chưa đo". Repo không điền số ước đoán; mọi con số lấy từ file trong `reports/`.
+> **Trạng thái kết quả:** dữ liệu, 5 thí nghiệm train (val), kết quả test (một lần) và phân tích lỗi đã có
+> số liệu thật (bên dưới), cùng benchmark GPU (ONNX, TensorRT FP16/INT8). Repo không
+> điền số ước đoán; mọi con số lấy từ file trong `reports/`.
 
 ## Bài toán và điểm đáng chú ý
 
@@ -58,21 +59,75 @@ cũng nằm trong [ROADMAP.md](ROADMAP.md)):
 | exp2 | yolov5su | mới (sạch) | 0,755 | 0,459 | civilian aircraft (0,380) | 14 phút |
 | exp3a | YOLO11n | mới (sạch) | 0,771 | **0,468** | civilian aircraft (0,402) | 9 phút |
 | exp3b | YOLO11s | mới (sạch) | 0,770 | 0,465 | civilian aircraft (0,383) | 15 phút |
+| exp3c | YOLO11n, **30 epoch** | mới (sạch) | **0,788** | **0,480** | civilian aircraft (0,422) | 15 phút |
 
 Cách đọc: (1) exp1 so với exp2 cho thấy chiều hướng val cũ cho số cao hơn (≈ +0,08 mAP50-95), nhưng hai
 lượt dùng hai val và hai train khác nhau nên đây **không phải phép đo sạch**. (2) Ba model trên val sạch
 chỉ cách nhau 0,009 (một seed, val 681 ảnh) nên chưa phân biệt được về thống kê. (3) Mọi lượt có epoch tốt
-nhất là epoch cuối và mAP còn tăng, tức **chưa hội tụ** ở 15 epoch. Chưa chạy lượt imgsz 960.
+nhất là epoch cuối và mAP còn tăng, tức **chưa hội tụ** ở 15 epoch; vì vậy chạy thêm exp3c (chỉ đổi số
+epoch lên 30, +0,012 mAP50-95 so với exp3a) và chọn làm model cuối theo val. Chưa chạy lượt imgsz 960.
 
 ### Kết quả cuối trên tập test
 
-**Chưa đo.** Sẽ có trong `reports/test_results.json` (một lần duy nhất, cho model đã chọn bằng val) kèm
-AP từng lớp và confusion matrix (`reports/test_results.confusion.png`).
+Model `exp3c` (YOLO11n, 30 epoch), chạy **một lần** trên 679 ảnh test (`reports/test_results.json`):
+
+| mAP50 | mAP50-95 | Precision | Recall |
+|---|---|---|---|
+| **0,844** | **0,531** | 0,823 | 0,778 |
+
+| Lớp | AP50 | AP50-95 |
+|---|---|---|
+| military truck | 0,847 | 0,553 |
+| civilian car | 0,917 | 0,638 |
+| military tank | 0,914 | 0,606 |
+| civilian aircraft | 0,810 | 0,497 |
+| military aircraft | 0,716 | 0,430 |
+| military helicopter | 0,857 | 0,462 |
+
+![Confusion matrix (test)](reports/test_results.confusion.png)
+
+Lưu ý: test cao hơn val (0,480) khoảng 0,05; với ~680 ảnh và một seed đây chỉ là dao động giữa hai tập,
+không phải "model tốt hơn trên test". Lớp yếu nhất đổi chỗ giữa val và test, nên chênh lệch từng lớp chưa
+đủ cơ sở kết luận. Chưa đo khoảng tin cậy.
+
+### Phân tích lỗi (val)
+
+Chi tiết và gallery: [reports/error_analysis/error_analysis.md](reports/error_analysis/error_analysis.md).
+Ở conf 0,25: 830 đúng, 76 nhầm lớp, 87 định vị sai, 27 trùng, 121 phát hiện thừa, 122 bỏ sót.
+- **Cặp nhầm lớn nhất:** civilian aircraft → military aircraft (28/76 ca), nhiều ca mơ hồ về ngữ nghĩa
+  (máy bay cánh tam giác, xe Hummer trắng, xe đồ chơi).
+- **"Phát hiện thừa" phần lớn là vật thể thật chưa được gán nhãn** (nhãn không đầy đủ), nên precision đo
+  được thấp hơn chất lượng thật. Có 12 ca nhãn đáng ngờ được ghi nhận, không sửa nhãn nào.
+- **Thử khắc phục nhầm lớp (tăng trọng số loss phân loại `cls` 0,5 → 1,0): không cải thiện** (val mAP50-95
+  0,469 so với 0,480; nhầm lớp 79 so với 76). Giữ model exp3c. Xem
+  [reports/error_analysis/remedy_comparison.md](reports/error_analysis/remedy_comparison.md).
 
 ### Benchmark RTX 4060 Laptop 8 GB
 
-**Chưa đo.** Bảng sẽ sinh từ `reports/benchmark.csv`: PyTorch FP32/FP16, ONNX Runtime, TensorRT
-FP16/INT8 (latency p50/p95, throughput batch 1/4/8/16, VRAM, mAP50-95).
+Model `exp3c` (YOLO11n 30 epoch), input 1×3×640×640. Mỗi ô là **trung vị của 3 vòng đo xen kẽ**, trong
+ngoặc vuông là khoảng [min–max]; mỗi lần đo chạy trong một tiến trình riêng (VRAM là của riêng định dạng,
+gồm CUDA context). Nguồn: `reports/benchmark.csv` (+ `reports/benchmark_runs/README.md`).
+
+| Định dạng | Precision | Latency p50 batch 1 (ms) | Throughput batch 16 (img/s) | VRAM (MB) | mAP50-95 (test) | Kích thước file |
+|---|---|---|---|---|---|---|
+| PyTorch | FP32 | 4,82 [4,77–6,56] | 309 [178–309] | 672 | 0,5323 | 5,2 MB |
+| PyTorch | FP16 | 5,00 [4,93–5,41] | 471 [255–478] | 532 | 0,5319 | 5,2 MB |
+| ONNX Runtime (GPU) | FP32 | 3,68 [3,68–8,42] | 159 [113–159] | 1308 | 0,5323 | 10,8 MB |
+| TensorRT | FP16 | **1,11** [1,10–1,21] | 651 [633–658] | 1196 | 0,5321 | 7,6 MB |
+| TensorRT | INT8 | 1,14 [1,14–1,14] | **767** [766–767] | **1056** | **0,5228** | **4,5 MB** |
+
+Cách đọc:
+- **TensorRT FP16 nhanh hơn PyTorch FP32 khoảng 4,3 lần** ở batch 1 (1,11 so với 4,82 ms) và gấp ~2,1 lần ở
+  throughput batch 16, mà mAP gần như không đổi (0,5321 so với 0,5323).
+- **INT8 không nhanh hơn FP16 ở batch 1** (1,14 so với 1,11 ms; model nhỏ nên bị giới hạn bởi chi phí cố
+  định), chỉ tăng ~18% throughput ở batch 16, đổi lại **giảm 0,0095 mAP50-95** (≈ 1,8% tương đối), file nhỏ
+  hơn (4,5 MB) và dùng ít VRAM hơn. Với model này, FP16 là điểm cân bằng tốt nhất.
+- **Cảnh báo về độ dao động:** GPU laptop bị hãm xung (~780 MHz, giới hạn công suất/nhiệt phần mềm) khi tải nhẹ
+  và lên 2250–2550 MHz khi tải nặng kéo dài; ở trạng thái bị hãm TensorRT FP16 là 3,2 ms và INT8 là 2,5 ms.
+  Khoảng [min–max] trong bảng phản ánh điều này; **không so sánh số của các định dạng đo ở hai trạng thái xung
+  khác nhau**. Chi tiết và các lần đo trước: [reports/benchmark_runs/README.md](reports/benchmark_runs/README.md).
+- mAP50-95 ở đây (0,5323) đo bằng quy trình benchmark (batch 8) nên lệch 0,0016 so với 0,5307 của
+  `reports/test_results.json` (batch 16); dùng bảng này để so sánh các định dạng với nhau.
 
 ### Demo
 
@@ -130,7 +185,9 @@ docker compose up --build api                  # API  -> http://localhost:8000/d
 docker compose --profile demo up --build demo  # demo -> http://localhost:7860
 ```
 
-`docker/Dockerfile.gpu` (profile `gpu`) mới được viết, **chưa kiểm thử**. Đưa demo lên Hugging Face
+`docker/Dockerfile.gpu` (profile `gpu`) mới được viết, **chưa kiểm thử**. API đã được chạy thật với model `exp3c`
+(ONNX Runtime GPU và Docker CPU cho cùng kết quả; độ khớp với Ultralytics: `reports/serve_parity.json`).
+Lần gọi đầu trên GPU chậm (khởi tạo), nên cần warm-up khi triển khai. Đưa demo lên Hugging Face
 Spaces: [docs/HF_SPACES.md](docs/HF_SPACES.md).
 
 ## Cấu trúc repo
@@ -148,7 +205,7 @@ docker/ docs/   Dockerfile CPU/GPU; hướng dẫn TensorRT, Hugging Face Spaces
 ## Kiểm thử và CI
 
 ```bash
-python -m pytest                 # 107 test, không cần GPU/dataset
+python -m pytest                 # 124 test, không cần GPU/dataset
 ruff check . && ruff format --check .
 ```
 

@@ -1,0 +1,324 @@
+{
+  "params": {
+    "weights": "runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt",
+    "split": "v2",
+    "part": "val",
+    "conf": 0.25,
+    "iou_match": 0.5,
+    "imgsz": 640,
+    "seed": 0
+  },
+  "n_images": 681,
+  "n_gt_boxes_approx": 1115,
+  "counts": {
+    "tp": 830,
+    "class_confusion": 76,
+    "localization": 87,
+    "duplicate": 27,
+    "background_fp": 121,
+    "other_fp": 11,
+    "miss": 122
+  },
+  "confusion_pairs": [
+    {
+      "true": "civilian aircraft",
+      "predicted": "military aircraft",
+      "count": 28
+    },
+    {
+      "true": "military aircraft",
+      "predicted": "civilian aircraft",
+      "count": 7
+    },
+    {
+      "true": "military tank",
+      "predicted": "military truck",
+      "count": 7
+    },
+    {
+      "true": "civilian car",
+      "predicted": "military truck",
+      "count": 7
+    },
+    {
+      "true": "military aircraft",
+      "predicted": "military helicopter",
+      "count": 6
+    },
+    {
+      "true": "military truck",
+      "predicted": "civilian car",
+      "count": 6
+    },
+    {
+      "true": "military helicopter",
+      "predicted": "military aircraft",
+      "count": 5
+    },
+    {
+      "true": "civilian aircraft",
+      "predicted": "civilian car",
+      "count": 2
+    },
+    {
+      "true": "military truck",
+      "predicted": "military tank",
+      "count": 2
+    },
+    {
+      "true": "civilian aircraft",
+      "predicted": "military helicopter",
+      "count": 1
+    },
+    {
+      "true": "military aircraft",
+      "predicted": "military tank",
+      "count": 1
+    },
+    {
+      "true": "military truck",
+      "predicted": "military aircraft",
+      "count": 1
+    },
+    {
+      "true": "military tank",
+      "predicted": "military helicopter",
+      "count": 1
+    },
+    {
+      "true": "military tank",
+      "predicted": "civilian aircraft",
+      "count": 1
+    },
+    {
+      "true": "military helicopter",
+      "predicted": "military tank",
+      "count": 1
+    }
+  ],
+  "miss_tags": {
+    "other": 54,
+    "crowded": 49,
+    "occluded": 28,
+    "small": 31
+  },
+  "per_class": {
+    "military truck": {
+      "tp": 136,
+      "background_fp": 20,
+      "miss": 22,
+      "duplicate": 4,
+      "other_fp": 1,
+      "localization": 6,
+      "predicted_wrongly": 14,
+      "confused_as_other": 9
+    },
+    "civilian car": {
+      "miss": 39,
+      "tp": 178,
+      "background_fp": 39,
+      "localization": 25,
+      "predicted_wrongly": 8,
+      "duplicate": 3,
+      "confused_as_other": 7
+    },
+    "military tank": {
+      "tp": 192,
+      "background_fp": 20,
+      "miss": 16,
+      "localization": 13,
+      "duplicate": 7,
+      "confused_as_other": 9,
+      "predicted_wrongly": 4
+    },
+    "civilian aircraft": {
+      "tp": 83,
+      "miss": 14,
+      "confused_as_other": 31,
+      "localization": 18,
+      "predicted_wrongly": 8,
+      "duplicate": 4,
+      "other_fp": 3
+    },
+    "military aircraft": {
+      "tp": 107,
+      "duplicate": 2,
+      "predicted_wrongly": 34,
+      "localization": 9,
+      "miss": 11,
+      "confused_as_other": 14,
+      "background_fp": 29,
+      "other_fp": 5
+    },
+    "military helicopter": {
+      "tp": 134,
+      "duplicate": 7,
+      "localization": 16,
+      "miss": 20,
+      "confused_as_other": 6,
+      "background_fp": 13,
+      "predicted_wrongly": 8,
+      "other_fp": 2
+    }
+  },
+  "suspect_labels": [
+    {
+      "image": "boeing-787-800x415.jpg",
+      "reason": "high-confidence class disagreement",
+      "score": 0.868,
+      "predicted": "civilian car",
+      "labeled": "civilian aircraft"
+    },
+    {
+      "image": "images308(10).jpg",
+      "reason": "high-confidence class disagreement",
+      "score": 0.867,
+      "predicted": "civilian car",
+      "labeled": "civilian aircraft"
+    },
+    {
+      "image": "id_ltt-hmt_trailer_m1101_04_700.jpg",
+      "reason": "high-confidence detection without label",
+      "score": 0.836,
+      "predicted": "military truck",
+      "labeled": null
+    },
+    {
+      "image": "images51(6).jpg",
+      "reason": "high-confidence class disagreement",
+      "score": 0.825,
+      "predicted": "military helicopter",
+      "labeled": "military aircraft"
+    },
+    {
+      "image": "images318(2).jpg",
+      "reason": "high-confidence class disagreement",
+      "score": 0.819,
+      "predicted": "military truck",
+      "labeled": "military tank"
+    },
+    {
+      "image": "images292(9).jpg",
+      "reason": "high-confidence detection without label",
+      "score": 0.807,
+      "predicted": "civilian car",
+      "labeled": null
+    },
+    {
+      "image": "images240.jpg",
+      "reason": "high-confidence class disagreement",
+      "score": 0.805,
+      "predicted": "military truck",
+      "labeled": "military tank"
+    },
+    {
+      "image": "taxi-police-cars-top-view-vector-set-auto-car-icon-illustration-vector-illustration-flat-design-top-view-police-taxi-image.jpg",
+      "reason": "high-confidence detection without label",
+      "score": 0.801,
+      "predicted": "civilian car",
+      "labeled": null
+    },
+    {
+      "image": "images318(7).jpg",
+      "reason": "high-confidence detection without label",
+      "score": 0.772,
+      "predicted": "military helicopter",
+      "labeled": null
+    },
+    {
+      "image": "aletta-wenas-helispread2-2forportfoliobox.jpg",
+      "reason": "high-confidence detection without label",
+      "score": 0.745,
+      "predicted": "military helicopter",
+      "labeled": null
+    },
+    {
+      "image": "Cold-War-poster-equipment-Soviet-army.jpg",
+      "reason": "high-confidence detection without label",
+      "score": 0.722,
+      "predicted": "military tank",
+      "labeled": null
+    },
+    {
+      "image": "images36(8).jpg",
+      "reason": "high-confidence detection without label",
+      "score": 0.721,
+      "predicted": "civilian car",
+      "labeled": null
+    }
+  ],
+  "gallery": {
+    "class_confusion": [
+      "boeing-787-800x415.jpg",
+      "images308(10).jpg",
+      "images51(6).jpg",
+      "images318(2).jpg",
+      "images240.jpg",
+      "images232(5).jpg"
+    ],
+    "miss_small": [
+      "images136(3).jpg",
+      "images195(6).jpg",
+      "images290(10).jpg",
+      "images288(4).jpg",
+      "airplanes-aircrafts-helicopters-set-air-260nw-1503096545.jpg",
+      "images79(4).jpg"
+    ],
+    "miss_occluded": [
+      "LaFontaine-Global-Vehicles-Home-Image-1200x450_c.jpg",
+      "m1a2-abrams-battle-tank-01.jpg",
+      "india-arunachal-pradesh-tenga-cantonment-army-recovery-truck-recovering-CC74CB.jpg",
+      "gbp-jp-2016769.jpg",
+      "images607.jpg",
+      "images247(8).jpg"
+    ],
+    "miss_crowded": [
+      "images45(8).jpg",
+      "india-arunachal-pradesh-tenga-cantonment-army-recovery-truck-recovering-CC74CB.jpg",
+      "images58(9).jpg",
+      "Cold-War-poster-equipment-Soviet-army.jpg",
+      "gbp-jp-2016769.jpg",
+      "1200px-ALCOB_Ashok_Leyland_Corporate_Building_in_Guindy2C_Chennai.jpg"
+    ],
+    "miss_other": [
+      "1(2).jpg",
+      "Vehicles_850x460_acf_cropped.jpg",
+      "images10(7).jpg",
+      "images48(5).jpg",
+      "BG-Museums-1200x343.jpg",
+      "Types-of-Vehicle..jpg"
+    ],
+    "background_fp": [
+      "id_ltt-hmt_trailer_m1101_04_700.jpg",
+      "images292(9).jpg",
+      "taxi-police-cars-top-view-vector-set-auto-car-icon-illustration-vector-illustration-flat-design-top-view-police-taxi-image.jpg",
+      "images318(7).jpg",
+      "aletta-wenas-helispread2-2forportfoliobox.jpg",
+      "Cold-War-poster-equipment-Soviet-army.jpg"
+    ],
+    "duplicate": [
+      "images263(1).jpg",
+      "Airbus-Commercial-Aircraft-formation-flight-3.jpg",
+      "images100(5).jpg",
+      "images242(1).jpg",
+      "images304(1).jpg",
+      "images239(8).jpg"
+    ],
+    "localization": [
+      "images360(8).jpg",
+      "images347(9).jpg",
+      "gbp-jp-2016769.jpg",
+      "images245(7).jpg",
+      "2014chilec130aircraft-1575947699.jpg",
+      "images21(4).jpg"
+    ],
+    "suspect_label": [
+      "boeing-787-800x415.jpg",
+      "images308(10).jpg",
+      "id_ltt-hmt_trailer_m1101_04_700.jpg",
+      "images51(6).jpg",
+      "images318(2).jpg",
+      "images292(9).jpg"
+    ]
+  }
+}
