@@ -123,7 +123,7 @@ Nguồn `reports/benchmark.csv` (trung vị 3 vòng, mỗi lần đo một tiế
   giá độc lập về độ chính xác của nhãn.
 - **Độ không chắc chắn của kết quả:** một seed, val/test chỉ ~680 ảnh; chưa đo khoảng tin cậy; model chưa
   hội tụ hoàn toàn (xem `reports/experiments/*/results.csv`).
-- **Tiền xử lý của API khác Ultralytics một chút** (Pillow vs OpenCV resize): bbox điểm ≥ 0,6 khớp IoU > 0,9 ở 96%
+- **Tiền xử lý của demo khác Ultralytics một chút** (Pillow vs OpenCV resize): bbox điểm ≥ 0,6 khớp IoU > 0,9 ở 96%
   (`reports/serve_parity.json`), điểm thấp lệch nhiều hơn; ảnh hưởng tới mAP chưa đo
   với model thật.
 

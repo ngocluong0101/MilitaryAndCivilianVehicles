@@ -1,11 +1,8 @@
 """Tiện ích dựng model ONNX giả và detector stub cho test phục vụ model."""
 
-import io
-
 import numpy as np
 import onnx
 from onnx import TensorProto, helper
-from PIL import Image
 
 from vehicledet.serve.inference import Detection, DetectionResult
 
@@ -59,12 +56,6 @@ def write_fake_onnx(path, end2end: bool = False, imgsz: int = 640, with_names: b
         model.metadata_props.add(key=k, value=v)
     onnx.save(model, str(path))
     return path
-
-
-def png_bytes(size=(64, 48), color=(120, 130, 140)) -> bytes:
-    buf = io.BytesIO()
-    Image.new("RGB", size, color).save(buf, format="PNG")
-    return buf.getvalue()
 
 
 class StubDetector:

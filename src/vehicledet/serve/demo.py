@@ -1,6 +1,6 @@
 """Demo Gradio: tải ảnh lên → ảnh có bbox + bảng kết quả + thời gian suy luận.
 
-Dùng cùng lõi inference (`vehicledet.serve.inference`) với API, không viết lại logic.
+Dùng lõi inference `vehicledet.serve.inference` (chỉ cần onnxruntime, không cần torch).
 """
 
 from __future__ import annotations

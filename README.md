@@ -8,7 +8,7 @@ cho biết đó là loại nào trong 6 loại — `military truck` (xe tải qu
 `military helicopter` (trực thăng quân sự). Xây dựng trên [Ultralytics YOLO](https://github.com/ultralytics/ultralytics).
 
 Project đi qua đủ vòng đời của một model thị giác máy tính: **kiểm tra dữ liệu → chia tập đúng cách →
-huấn luyện có đối chứng → phân tích lỗi → tối ưu tốc độ → đóng gói thành API, demo và Docker**.
+huấn luyện có đối chứng → phân tích lỗi → tối ưu tốc độ → chạy thử bằng demo web**.
 
 ```mermaid
 flowchart LR
@@ -19,20 +19,17 @@ flowchart LR
     E --> F[evaluate &<br/>analyze-errors]
     F --> G[export<br/>ONNX, TensorRT]
     G --> H[benchmark]
-    G --> I[serve<br/>API + demo + Docker]
+    G --> I[demo<br/>giao diện web Gradio]
 ```
 
 ## Điểm nổi bật
-
-Phần lớn dự án học máy dừng ở việc "huấn luyện ra một con số". Dự án này tập trung vào những chỗ thường bị bỏ qua
-nhưng quyết định kết quả có đáng tin hay không:
 
 | Khía cạnh | Vấn đề thường gặp | Dự án này làm gì | Kết quả |
 |---|---|---|---|
 | **Dữ liệu** | Ảnh giống nhau nằm ở cả tập huấn luyện và tập kiểm tra khiến điểm số cao ảo | Dò ảnh trùng bằng perceptual hash, chia lại dữ liệu theo từng nhóm ảnh trùng | **71,7%** ảnh có bản trùng; **64,9%** ảnh kiểm tra của cách chia gốc có bản sao trong tập huấn luyện; sau khi chia lại: 0 nhóm bị tách |
 | **Đánh giá** | Chọn model trên tập test làm số cuối bị lạc quan | Khoá tập test trong code (chỉ chạy một lần); mỗi thí nghiệm chỉ đổi một yếu tố, lưu bằng MLflow | mAP50-95 **0,531** trên 679 ảnh test độc lập |
 | **Tốc độ** | Model chính xác nhưng quá chậm để dùng | Export ONNX/TensorRT, đo độ trễ, thông lượng, VRAM và độ chính xác của từng định dạng | TensorRT FP16 nhanh **≈ 4 lần** PyTorch FP32 (4,82 → 1,11 ms/ảnh), độ chính xác gần như không đổi |
-| **Triển khai** | Model chỉ nằm trong notebook | API FastAPI, demo Gradio, Docker CPU (~760 MB), kiểm thử tự động chạy trên CI | **124** bài kiểm thử; chạy được cả trên CPU |
+| **Sử dụng** | Model chỉ nằm trong notebook | Demo web Gradio chạy bằng ONNX Runtime (chạy được cả trên CPU, không cần PyTorch), kiểm thử tự động chạy trên CI | **109** bài kiểm thử; một lệnh để mở demo |
 | **Trung thực** | Chỉ công bố kết quả đẹp | Ghi lại cả thí nghiệm không cải thiện và các lỗi đo đạc đã sửa | Toàn bộ trong [reports/](reports/) |
 
 ## Kết quả
@@ -85,7 +82,7 @@ chưa gán nhãn. Báo cáo kèm ảnh minh hoạ: [reports/error_analysis/error
 
 ## Bắt đầu nhanh
 
-**Yêu cầu:** Python ≥ 3.10; GPU NVIDIA để huấn luyện (đã chạy trên RTX 4060 Laptop 8 GB). API và demo chạy
+**Yêu cầu:** Python ≥ 3.10; GPU NVIDIA để huấn luyện (đã chạy trên RTX 4060 Laptop 8 GB). Demo chạy
 được cả trên CPU.
 
 ### 1. Cài đặt
@@ -138,64 +135,34 @@ python -m vehicledet export --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weig
 python -m vehicledet benchmark --model-dir exports/exp3c
 ```
 
-### 5. Chạy API và demo
+### 5. Chạy demo
 
 Model đã huấn luyện không đi kèm repo (file nặng và ràng buộc license), nên cần làm các bước trên để có
 `exports/exp3c/best.onnx`.
 
 ```bash
-python -m vehicledet serve --model exports/exp3c/best.onnx        # API tại http://127.0.0.1:8000/docs
-python -m vehicledet demo  --model exports/exp3c/best.onnx        # giao diện web Gradio tại http://127.0.0.1:7860
+python -m vehicledet demo --model exports/exp3c/best.onnx      # giao diện web tại http://127.0.0.1:7860
 ```
 
-Gọi API:
-
-```bash
-curl -F "file=@anh.jpg" "http://127.0.0.1:8000/predict?conf=0.25"
-```
-
-```json
-{
-  "image": {"width": 1200, "height": 755},
-  "detections": [
-    {"class_id": 2, "label": "military tank", "score": 0.6086,
-     "bbox": {"x1": 354.3, "y1": 261.4, "x2": 1041.0, "y2": 524.9}}
-  ],
-  "inference_ms": 42.48, "total_ms": 59.6, "backend": "onnxruntime (CPU)"
-}
-```
-
-- `POST /predict`: nhận ảnh JPEG/PNG/WebP/BMP, tham số `conf` (ngưỡng tin cậy) và `iou`; giới hạn kích thước
-  mặc định 10 MB (đổi bằng biến môi trường `MAX_UPLOAD_MB`). Lỗi trả về rõ ràng: 400 (ảnh không hợp lệ),
-  413 (quá lớn), 422 (tham số sai), 503 (model chưa nạp).
-- `GET /health`: kiểm tra dịch vụ và model đã sẵn sàng chưa.
-
-### Chạy bằng Docker (CPU)
-
-```bash
-mkdir -p models && cp exports/exp3c/best.onnx models/best.onnx
-docker compose up --build api                    # API  -> http://localhost:8000/docs
-docker compose --profile demo up --build demo    # demo -> http://localhost:7860
-```
-
-Image CPU nhỏ (~760 MB), không chứa PyTorch hay Ultralytics.
+Tải một ảnh lên, kéo thanh ngưỡng tin cậy; demo trả về ảnh đã khoanh vùng, bảng các phương tiện phát hiện
+(lớp, điểm, toạ độ) và thời gian xử lý. Thêm `--device cpu` để ép chạy bằng CPU; demo không cần PyTorch.
 
 ## Cấu trúc thư mục
 
 ```
 configs/        cấu hình từng thí nghiệm (YAML) và tên 6 lớp
-src/vehicledet/ mã nguồn: data/ (kiểm tra, chia tập), train, evaluate, export, benchmark, serve/ (API, demo)
+src/vehicledet/ mã nguồn: data/ (kiểm tra, chia tập), train, evaluate, export, benchmark, serve/ (lõi nhận diện và demo)
 splits/         danh sách ảnh của từng tập train/val/test
 scripts/        cài môi trường, chạy hàng loạt thí nghiệm, tổng hợp kết quả
-tests/          124 bài kiểm thử (dùng dữ liệu giả, không cần GPU hay dataset)
+tests/          109 bài kiểm thử (dùng dữ liệu giả, không cần GPU hay dataset)
 reports/        toàn bộ kết quả đo (json, csv, ảnh): nguồn của mọi con số trong tài liệu này
-docker/ docs/   Dockerfile, hướng dẫn cài TensorRT
+docs/           hướng dẫn cài TensorRT, đưa demo lên Hugging Face Spaces
 ```
 
 ## Kiểm thử
 
 ```bash
-python -m pytest                      # 124 bài kiểm thử, chạy trên CPU, không cần dataset
+python -m pytest                      # 109 bài kiểm thử, chạy trên CPU, không cần dataset
 ruff check . && ruff format --check .
 ```
 

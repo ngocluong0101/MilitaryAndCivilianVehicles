@@ -1,7 +1,0 @@
-# Phụ thuộc tối thiểu để phục vụ model bằng ONNX Runtime (không cần torch/ultralytics)
-fastapi==0.165.0
-uvicorn==0.54.0
-python-multipart==0.0.34
-onnxruntime==1.32.0
-numpy==2.5.5
-Pillow==13.0.0

@@ -36,7 +36,7 @@ onnxruntime==1.32.0
 numpy==2.5.5
 Pillow==13.0.0
 ```
-(`gradio` do Space tự cài theo `sdk_version`; thêm `fastapi`/`pydantic` nếu import `serve.app`.)
+(`gradio` do Space tự cài theo `sdk_version`.)
 
 `app.py`:
 

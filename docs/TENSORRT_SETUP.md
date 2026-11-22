@@ -11,7 +11,7 @@ Máy đã kiểm tra: RTX 4060 Laptop 8 GB, driver 595.99.02, `torch 2.15.0+cu13
 | Gói | Phiên bản | Ghi chú |
 |---|---|---|
 | `tensorrt-cu13` | 10.16.1.11 | chọn nhánh 10.x thay vì 11.x vì chưa kiểm chứng 11.x với Ultralytics 8.4.216 (nhất là INT8) |
-| `onnxruntime-gpu` | 1.32.0 | thay cho `onnxruntime` (CPU) trong `.venv`; image Docker CPU vẫn dùng `onnxruntime` CPU |
+| `onnxruntime-gpu` | 1.32.0 | thay cho `onnxruntime` (CPU) trong `.venv` |
 
 (`requirements.txt` vẫn ghi `onnxruntime` CPU để người khác cài được không cần GPU; xem `requirements-lock.txt`
 để biết môi trường đang dùng.) Việc cài đặt chỉ chứng minh `import tensorrt` chạy được; khả năng nạp thật của
@@ -23,7 +23,7 @@ Máy đã kiểm tra: RTX 4060 Laptop 8 GB, driver 595.99.02, `torch 2.15.0+cu13
 1. **ONNX Runtime có thể lặng lẽ rơi về CPU.** `onnxruntime-gpu` báo `CUDAExecutionProvider` có sẵn, nhưng nếu không
    nạp được thư viện CUDA (ở đây thiếu `libcublasLt.so.13` trong đường dẫn) thì session chỉ dùng CPU. Cách xử lý:
    gọi `onnxruntime.preload_dlls()` (nạp CUDA/cuDNN cài bằng pip) trước khi tạo session, và kiểm tra bằng
-   `session.get_providers()`. Cả benchmark lẫn API đều đã làm vậy.
+   `session.get_providers()`. Cả benchmark lẫn demo đều đã làm vậy.
 2. **GPU laptop đổi xung nhịp theo tải** (~780 MHz khi bị hãm so với ~2500 MHz khi tải nặng), làm latency
    TensorRT dao động ~3 lần; xem `reports/benchmark_runs/README.md`.
 
@@ -60,7 +60,7 @@ phiên bản. Export engine bắt buộc chạy trên GPU (`--device 0`) và có
 ```
 
 Nếu danh sách provider không có `CUDAExecutionProvider`, benchmark sẽ ghi "chưa đo" cho dòng ONNX
-trên GPU thay vì đo nhầm trên CPU. (API/demo vẫn chạy được với `onnxruntime` CPU.)
+trên GPU thay vì đo nhầm trên CPU. (Demo vẫn chạy được với `onnxruntime` CPU.)
 
 ## 4. Chạy export + benchmark sau khi đã chọn model (từ val)
 

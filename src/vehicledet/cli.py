@@ -151,10 +151,6 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
         sp.add_argument("--host", default="127.0.0.1")
 
-    sp = sub.add_parser("serve", help="Chạy API FastAPI (POST /predict, GET /health)")
-    add_model_args(sp)
-    sp.add_argument("--port", type=int, default=8000)
-
     sp = sub.add_parser("demo", help="Chạy demo Gradio")
     add_model_args(sp)
     sp.add_argument("--port", type=int, default=7860)
@@ -306,13 +302,6 @@ def main(argv: list[str] | None = None) -> int:
             args.weights, args.split, args.conf, args.imgsz, args.device, args.data_root, **kwargs
         )
         print(json.dumps(summary["counts"], ensure_ascii=False, indent=1))
-    elif args.command == "serve":
-        import os
-
-        import uvicorn
-
-        os.environ.update(MODEL_PATH=args.model, BACKEND=args.backend, DEVICE=args.device)
-        uvicorn.run("vehicledet.serve.app:app", host=args.host, port=args.port)
     elif args.command == "demo":
         from vehicledet.serve.demo import launch
 

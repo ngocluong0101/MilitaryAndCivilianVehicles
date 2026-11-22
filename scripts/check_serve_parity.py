@@ -1,4 +1,4 @@
-"""So khớp pipeline ONNX tự viết (API/demo) với Ultralytics trên cùng ảnh val.
+"""So khớp pipeline ONNX tự viết (demo) với Ultralytics trên cùng ảnh val.
 
 Dùng: python scripts/check_serve_parity.py --model exports/<tag>/best.onnx [--split v2] [--n 100]
 Chỉ dùng ảnh VAL. Ghi reports/serve_parity.json: tỉ lệ bbox khớp (IoU > 0.9) theo khoảng điểm.

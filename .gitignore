@@ -32,7 +32,6 @@ mlflow.db
 /logs/
 /weights/
 /exports/
-/models/
 *.pt
 *.onnx
 *.engine

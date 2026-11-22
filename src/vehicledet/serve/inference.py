@@ -1,4 +1,4 @@
-"""Lõi inference dùng chung cho API và demo: ONNX Runtime (mặc định, chạy cả CPU) hoặc TensorRT.
+"""Lõi inference của demo: ONNX Runtime (mặc định, chạy cả CPU) hoặc TensorRT.
 
 Backend ONNX tự làm tiền/hậu xử lý bằng numpy/Pillow (letterbox → model → lọc ngưỡng → NMS theo lớp
 → đưa toạ độ về ảnh gốc) để không cần torch/ultralytics khi triển khai.
@@ -65,7 +65,7 @@ class DetectionResult:
 
 
 class Detector(Protocol):
-    """Giao diện chung; API và demo chỉ phụ thuộc vào giao diện này (dễ thay bằng stub khi test)."""
+    """Giao diện chung; demo chỉ phụ thuộc vào giao diện này (dễ thay bằng stub khi test)."""
 
     backend: str
     model_name: str

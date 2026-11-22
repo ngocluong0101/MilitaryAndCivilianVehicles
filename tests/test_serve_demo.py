@@ -14,7 +14,7 @@ def test_demo_function_returns_image_table_and_timing():
         TABLE_HEADERS
     )
     assert "1 đối tượng" in summary and "1.5 ms" in summary and "stub" in summary
-    assert det.calls == [((64, 48), 0.25, 0.7)]  # đi qua cùng Detector.predict như API
+    assert det.calls == [((64, 48), 0.25, 0.7)]  # đi qua Detector.predict
 
 
 def test_demo_handles_no_image_and_no_detections():
