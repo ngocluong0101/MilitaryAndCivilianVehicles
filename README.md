@@ -2,74 +2,45 @@
 
 [![CI](https://github.com/ngocluong0101/MilitaryAndCivilianVehicles/actions/workflows/ci.yml/badge.svg)](https://github.com/ngocluong0101/MilitaryAndCivilianVehicles/actions/workflows/ci.yml)
 
-Phát hiện và phân loại 6 lớp phương tiện (`military truck`, `civilian car`, `military tank`,
-`civilian aircraft`, `military aircraft`, `military helicopter`) bằng
-[Ultralytics](https://github.com/ultralytics/ultralytics) YOLO.
+Hệ thống nhận diện phương tiện trong ảnh: đưa vào một bức ảnh, hệ thống khoanh vùng từng phương tiện và
+cho biết đó là loại nào trong 6 loại — `military truck` (xe tải quân sự), `civilian car` (ô tô dân sự),
+`military tank` (xe tăng), `civilian aircraft` (máy bay dân dụng), `military aircraft` (máy bay quân sự),
+`military helicopter` (trực thăng quân sự). Xây dựng trên [Ultralytics YOLO](https://github.com/ultralytics/ultralytics).
 
-Trọng tâm của project là **quy trình phát triển model bài bản**, không chỉ "chạy train": kiểm tra chất
-lượng dữ liệu → chia tập không rò rỉ → thí nghiệm có đối chứng → phân tích lỗi → export và đo tốc độ →
-phục vụ model. Số liệu chi tiết nằm trong thư mục `reports/`.
-
-> **Trạng thái kết quả:** dữ liệu, 5 thí nghiệm train (val), kết quả test (một lần) và phân tích lỗi đã có
-> số liệu thật (bên dưới), cùng benchmark GPU (ONNX, TensorRT FP16/INT8). Repo không
-> điền số ước đoán; mọi con số lấy từ file trong `reports/`.
-
-## Bài toán và điểm đáng chú ý
-
-- **Dữ liệu:** [Mendeley Data](https://data.mendeley.com/datasets/njdjkbxdpn/1) (CC BY 4.0), 6.772 ảnh
-  web, 10.718 bbox hợp lệ, 6 lớp. Xem [DATASET.md](DATASET.md).
-- **Phát hiện chính của bước kiểm tra dữ liệu:** 4.853/6.772 ảnh (71,7%) thuộc nhóm ảnh trùng/gần trùng
-  (chỉ khoảng 4.264 bức ảnh khác nhau). Trong cách chia train/val gốc, **322/496 ảnh val (64,9%) có bản
-  gần trùng trong train**, nên mAP đo trên val gốc sẽ bị thổi phồng. Cách chia mới `splits/v2` gom cả
-  nhóm vào cùng một tập (0 nhóm nằm ở hai tập) và có thêm tập test riêng.
-- **Kỷ luật đánh giá:** mọi lựa chọn dựa trên val; tập test bị khoá trong code (`--final`, chạy một lần).
-- **Tái lập:** seed cố định, phiên bản thư viện được pin, mỗi lần train lưu config + môi trường + MLflow.
-
-## Kiến trúc quy trình
+Project đi qua đủ vòng đời của một model thị giác máy tính: **kiểm tra dữ liệu → chia tập đúng cách →
+huấn luyện có đối chứng → phân tích lỗi → tối ưu tốc độ → đóng gói thành API, demo và Docker**.
 
 ```mermaid
 flowchart LR
-    A[(Dataset Mendeley<br/>ngoài git)] --> B[audit<br/>nhãn, ảnh hỏng, CSV vs TXT]
-    B --> C[find-duplicates<br/>pHash, nhóm gần trùng]
-    C --> D[make-split<br/>train/val/test theo nhóm]
-    D --> E[train<br/>Ultralytics + MLflow]
-    E --> F[evaluate<br/>mAP, AP từng lớp, confusion]
-    F --> G[export<br/>ONNX, TensorRT FP16/INT8]
-    G --> H[benchmark<br/>latency, throughput, VRAM, mAP]
-    G --> I[serve<br/>FastAPI + Gradio + Docker]
+    A[(Dataset<br/>Mendeley)] --> B[audit<br/>kiểm tra nhãn, ảnh]
+    B --> C[find-duplicates<br/>tìm ảnh trùng]
+    C --> D[make-split<br/>chia train/val/test]
+    D --> E[train<br/>YOLO + MLflow]
+    E --> F[evaluate &<br/>analyze-errors]
+    F --> G[export<br/>ONNX, TensorRT]
+    G --> H[benchmark]
+    G --> I[serve<br/>API + demo + Docker]
 ```
+
+## Dành cho nhà tuyển dụng: điểm nổi bật
+
+- **Phát hiện lỗi dữ liệu khiến kết quả bị "thổi phồng".** Bằng kỹ thuật so khớp ảnh (perceptual hash),
+  project phát hiện **71,7% ảnh trong dataset có bản trùng hoặc gần trùng**, và **64,9% ảnh dùng để kiểm tra
+  của cách chia gốc có bản sao trong tập huấn luyện** — tức là độ chính xác đo được bị cao ảo. Dữ liệu được
+  chia lại sao cho không còn ảnh trùng nào nằm ở hai tập khác nhau.
+- **Quy trình đánh giá nghiêm ngặt.** Tập test bị khoá trong code (chỉ chạy được một lần, cần cờ `--final`);
+  mọi lựa chọn model đều dựa trên tập kiểm định. Mỗi thí nghiệm chỉ đổi đúng một yếu tố để so sánh công bằng,
+  được ghi lại bằng MLflow.
+- **Kết quả cuối trên tập test độc lập:** mAP50-95 **0,531**, mAP50 **0,844** (679 ảnh).
+- **Tối ưu tốc độ:** sau khi export sang TensorRT FP16, thời gian xử lý một ảnh giảm khoảng **4 lần** so với
+  PyTorch FP32 mà độ chính xác gần như không đổi.
+- **Triển khai được:** API FastAPI, demo Gradio, Docker (CPU), **124 bài kiểm thử tự động** chạy trên CI.
+- **Trung thực về giới hạn:** các thí nghiệm không thành công, các lỗi đo đạc và hạn chế của dữ liệu đều được
+  ghi lại trong thư mục [reports/](reports/) thay vì bỏ qua.
 
 ## Kết quả
 
-### Dữ liệu (đã đo, nguồn: `reports/`)
-
-| Cách chia | Ảnh train / val / test | Ảnh val có bản gần trùng trong train | Nhóm gần trùng nằm ở >1 tập |
-|---|---|---|---|
-| `legacy` (gốc) | 6.206 / 496 / – | **322 (64,9%)** | 311 |
-| `v2` (mới) | 5.412 / 681 / 679 | 0 | **0** |
-
-### Thí nghiệm trên val (chọn model)
-
-15 epoch, seed 0, imgsz 640, mỗi lượt đổi một thứ; nguồn `reports/experiments/*/val.json` (bảng tự sinh:
-`reports/experiments_summary.md`):
-
-| Lượt | Model | Val | mAP50 | mAP50-95 | Lớp yếu nhất (AP50-95) | Train |
-|---|---|---|---|---|---|---|
-| exp1 | yolov5su | cũ (bị rò rỉ) | 0,792 | 0,540 | civilian aircraft (0,459) | 15 phút |
-| exp2 | yolov5su | mới (sạch) | 0,755 | 0,459 | civilian aircraft (0,380) | 14 phút |
-| exp3a | YOLO11n | mới (sạch) | 0,771 | **0,468** | civilian aircraft (0,402) | 9 phút |
-| exp3b | YOLO11s | mới (sạch) | 0,770 | 0,465 | civilian aircraft (0,383) | 15 phút |
-| exp3c | YOLO11n, **30 epoch** | mới (sạch) | **0,788** | **0,480** | civilian aircraft (0,422) | 15 phút |
-
-Cách đọc: (1) exp1 so với exp2 cho thấy chiều hướng val cũ cho số cao hơn (≈ +0,08 mAP50-95), nhưng hai
-lượt dùng hai val và hai train khác nhau nên đây **không phải phép đo sạch**. (2) Ba model trên val sạch
-chỉ cách nhau 0,009 (một seed, val 681 ảnh) nên chưa phân biệt được về thống kê. (3) Mọi lượt có epoch tốt
-nhất là epoch cuối và mAP còn tăng, tức **chưa hội tụ** ở 15 epoch; vì vậy chạy thêm exp3c (chỉ đổi số
-epoch lên 30, +0,012 mAP50-95 so với exp3a) và chọn làm model cuối theo val. Chưa chạy lượt imgsz 960.
-
-### Kết quả cuối trên tập test
-
-Model `exp3c` (YOLO11n, 30 epoch), chạy **một lần** trên 679 ảnh test (`reports/test_results.json`):
+### Trên tập test (model YOLO11n, 30 epoch, chạy một lần, 679 ảnh)
 
 | mAP50 | mAP50-95 | Precision | Recall |
 |---|---|---|---|
@@ -84,147 +55,173 @@ Model `exp3c` (YOLO11n, 30 epoch), chạy **một lần** trên 679 ảnh test (
 | military aircraft | 0,716 | 0,430 |
 | military helicopter | 0,857 | 0,462 |
 
-![Confusion matrix (test)](reports/test_results.confusion.png)
+![Confusion matrix trên tập test](reports/test_results.confusion.png)
 
-Lưu ý: test cao hơn val (0,480) khoảng 0,05; với ~680 ảnh và một seed đây chỉ là dao động giữa hai tập,
-không phải "model tốt hơn trên test". Lớp yếu nhất đổi chỗ giữa val và test, nên chênh lệch từng lớp chưa
-đủ cơ sở kết luận. Chưa đo khoảng tin cậy.
+### So sánh các model trên tập kiểm định (val)
 
-### Phân tích lỗi (val)
+| Thí nghiệm | Model | mAP50-95 |
+|---|---|---|
+| exp2 | YOLOv5s (YOLOv5su), 15 epoch | 0,459 |
+| exp3a | YOLO11n, 15 epoch | 0,468 |
+| exp3b | YOLO11s, 15 epoch | 0,465 |
+| **exp3c** | **YOLO11n, 30 epoch** (model được chọn) | **0,480** |
 
-Chi tiết và gallery: [reports/error_analysis/error_analysis.md](reports/error_analysis/error_analysis.md).
-Ở conf 0,25: 830 đúng, 76 nhầm lớp, 87 định vị sai, 27 trùng, 121 phát hiện thừa, 122 bỏ sót.
-- **Cặp nhầm lớn nhất:** civilian aircraft → military aircraft (28/76 ca), nhiều ca mơ hồ về ngữ nghĩa
-  (máy bay cánh tam giác, xe Hummer trắng, xe đồ chơi).
-- **"Phát hiện thừa" phần lớn là vật thể thật chưa được gán nhãn** (nhãn không đầy đủ), nên precision đo
-  được thấp hơn chất lượng thật. Có 12 ca nhãn đáng ngờ được ghi nhận, không sửa nhãn nào.
-- **Thử khắc phục nhầm lớp (tăng trọng số loss phân loại `cls` 0,5 → 1,0): không cải thiện** (val mAP50-95
-  0,469 so với 0,480; nhầm lớp 79 so với 76). Giữ model exp3c. Xem
-  [reports/error_analysis/remedy_comparison.md](reports/error_analysis/remedy_comparison.md).
+Nguồn: `reports/experiments_summary.md` và `reports/experiments/`.
 
-### Benchmark RTX 4060 Laptop 8 GB
+### Tốc độ trên RTX 4060 Laptop (model đã chọn, ảnh 640×640)
 
-Model `exp3c` (YOLO11n 30 epoch), input 1×3×640×640. Mỗi ô là **trung vị của 3 vòng đo xen kẽ**, trong
-ngoặc vuông là khoảng [min–max]; mỗi lần đo chạy trong một tiến trình riêng (VRAM là của riêng định dạng,
-gồm CUDA context). Nguồn: `reports/benchmark.csv` (+ `reports/benchmark_runs/README.md`).
+| Định dạng | Thời gian xử lý 1 ảnh (ms) | Số ảnh/giây (batch 16) | VRAM (MB) | mAP50-95 (test) |
+|---|---|---|---|---|
+| PyTorch FP32 | 4,82 | 309 | 672 | 0,5323 |
+| PyTorch FP16 | 5,00 | 471 | 532 | 0,5319 |
+| ONNX Runtime (GPU) | 3,68 | 159 | 1308 | 0,5323 |
+| **TensorRT FP16** | **1,11** | 651 | 1196 | 0,5321 |
+| TensorRT INT8 | 1,14 | **767** | 1056 | 0,5228 |
 
-| Định dạng | Precision | Latency p50 batch 1 (ms) | Throughput batch 16 (img/s) | VRAM (MB) | mAP50-95 (test) | Kích thước file |
-|---|---|---|---|---|---|---|
-| PyTorch | FP32 | 4,82 [4,77–6,56] | 309 [178–309] | 672 | 0,5323 | 5,2 MB |
-| PyTorch | FP16 | 5,00 [4,93–5,41] | 471 [255–478] | 532 | 0,5319 | 5,2 MB |
-| ONNX Runtime (GPU) | FP32 | 3,68 [3,68–8,42] | 159 [113–159] | 1308 | 0,5323 | 10,8 MB |
-| TensorRT | FP16 | **1,11** [1,10–1,21] | 651 [633–658] | 1196 | 0,5321 | 7,6 MB |
-| TensorRT | INT8 | 1,14 [1,14–1,14] | **767** [766–767] | **1056** | **0,5228** | **4,5 MB** |
+Nguồn: `reports/benchmark.csv`; chi tiết các lần đo ở `reports/benchmark_runs/README.md`.
 
-Cách đọc:
-- **TensorRT FP16 nhanh hơn PyTorch FP32 khoảng 4,3 lần** ở batch 1 (1,11 so với 4,82 ms) và gấp ~2,1 lần ở
-  throughput batch 16, mà mAP gần như không đổi (0,5321 so với 0,5323).
-- **INT8 không nhanh hơn FP16 ở batch 1** (1,14 so với 1,11 ms; model nhỏ nên bị giới hạn bởi chi phí cố
-  định), chỉ tăng ~18% throughput ở batch 16, đổi lại **giảm 0,0095 mAP50-95** (≈ 1,8% tương đối), file nhỏ
-  hơn (4,5 MB) và dùng ít VRAM hơn. Với model này, FP16 là điểm cân bằng tốt nhất.
-- **Cảnh báo về độ dao động:** GPU laptop bị hãm xung (~780 MHz, giới hạn công suất/nhiệt phần mềm) khi tải nhẹ
-  và lên 2250–2550 MHz khi tải nặng kéo dài; ở trạng thái bị hãm TensorRT FP16 là 3,2 ms và INT8 là 2,5 ms.
-  Khoảng [min–max] trong bảng phản ánh điều này; **không so sánh số của các định dạng đo ở hai trạng thái xung
-  khác nhau**. Chi tiết và các lần đo trước: [reports/benchmark_runs/README.md](reports/benchmark_runs/README.md).
-- mAP50-95 ở đây (0,5323) đo bằng quy trình benchmark (batch 8) nên lệch 0,0016 so với 0,5307 của
-  `reports/test_results.json` (batch 16); dùng bảng này để so sánh các định dạng với nhau.
+### Phân tích lỗi
 
-### Demo
+Lỗi model hay gặp nhất là nhầm máy bay dân dụng thành máy bay quân sự (28 trên tổng 76 ca nhầm lớp), nhiều ca
+vốn mơ hồ ngay cả với người xem. Nhiều trường hợp "phát hiện thừa" thực chất là vật thể thật mà dataset
+chưa gán nhãn. Báo cáo kèm ảnh minh hoạ: [reports/error_analysis/error_analysis.md](reports/error_analysis/error_analysis.md).
 
-GIF demo: chưa có (xem [docs/DEMO_RECORDING.md](docs/DEMO_RECORDING.md) để quay).
+## Bắt đầu nhanh
 
-## Cài đặt
+**Yêu cầu:** Python ≥ 3.10; GPU NVIDIA để huấn luyện (đã chạy trên RTX 4060 Laptop 8 GB). API và demo chạy
+được cả trên CPU.
 
-Yêu cầu: Python ≥ 3.10, GPU NVIDIA (đã kiểm tra trên RTX 4060 Laptop 8 GB, driver 595).
+### 1. Cài đặt
 
 ```bash
-bash scripts/setup_env.sh        # tạo .venv, cài requirements-dev.txt, cài package ở chế độ editable
+git clone https://github.com/ngocluong0101/MilitaryAndCivilianVehicles.git
+cd MilitaryAndCivilianVehicles
+bash scripts/setup_env.sh          # tạo môi trường ảo .venv và cài thư viện (đã pin phiên bản)
+source .venv/bin/activate
 ```
 
-Tương đương: `python3 -m venv .venv`, `pip install -r requirements-dev.txt`, `pip install -e . --no-deps`.
-Phiên bản pin trong `requirements.txt`; bản đóng băng đầy đủ ở `requirements-lock.txt`.
+### 2. Chuẩn bị dữ liệu
 
-## Tái lập từng bước
-
-Tải dataset từ Mendeley, giải nén sao cho có `Images/` và `Labels/`, rồi:
+Tải dataset [Military and Civilian Vehicles Classification](https://data.mendeley.com/datasets/njdjkbxdpn/1)
+(Mendeley Data, CC BY 4.0), giải nén sao cho có hai thư mục `Images/` và `Labels/`, rồi trỏ tới đó:
 
 ```bash
-export DATA_ROOT=/duong/dan/toi/dataset   # mặc định: <repo>/data (đã được .gitignore)
-
-# 1. Dữ liệu: kiểm tra, tìm ảnh trùng, chia tập (cách chia cũ để so sánh)
-python -m vehicledet audit             # -> reports/data_audit.md
-python -m vehicledet find-duplicates   # -> reports/duplicates.md
-python -m vehicledet make-split        # -> splits/v2/, reports/split_stats.md
-python -m vehicledet make-legacy-split # -> splits/legacy/
-
-# 2. Thí nghiệm 1–3 (qua đêm; bỏ qua cái đã xong), rồi tổng hợp bảng so sánh
-bash scripts/run_experiments.sh
-python scripts/summarize_runs.py       # -> reports/experiments_summary.{md,csv}
-mlflow ui --backend-store-uri sqlite:///mlflow.db   # xem MLflow local
-
-# 3. Đánh giá trên val; tập test chỉ chạy một lần với model đã chốt
-python -m vehicledet evaluate --weights runs/detect/<tên>/weights/best.pt --split v2 --part val
-python -m vehicledet evaluate --weights runs/detect/<tên>/weights/best.pt --split v2 --part test --final
-
-# 4. Export + benchmark (TensorRT/onnxruntime-gpu cần cài thêm: docs/TENSORRT_SETUP.md)
-python -m vehicledet export --weights runs/detect/<tên>/weights/best.pt --tag <tên>
-python -m vehicledet benchmark --model-dir exports/<tên> --map-part val
-
-# 5. Phục vụ model (ONNX Runtime, chạy được cả CPU)
-python -m vehicledet serve --model exports/<tên>/best.onnx    # http://127.0.0.1:8000/docs
-python -m vehicledet demo  --model exports/<tên>/best.onnx    # Gradio
+export DATA_ROOT=/duong/dan/toi/dataset      # mặc định: thư mục data/ trong repo
+python -m vehicledet audit                   # kiểm tra chất lượng dữ liệu  -> reports/data_audit.md
+python -m vehicledet find-duplicates         # tìm ảnh trùng                -> reports/duplicates.md
+python -m vehicledet make-split              # chia train/val/test          -> splits/v2/
 ```
 
-API: `POST /predict` (ảnh + `conf`, `iou`; giới hạn `MAX_UPLOAD_MB`, mặc định 10 MB; lỗi 400/413/422/503)
-và `GET /health`.
+### 3. Huấn luyện và đánh giá
 
 ```bash
-# Docker CPU (image ~760 MB, không chứa torch/ultralytics)
-mkdir -p models && cp exports/<tên>/best.onnx models/best.onnx
-docker compose up --build api                  # API  -> http://localhost:8000/docs
-docker compose --profile demo up --build demo  # demo -> http://localhost:7860
+python -m vehicledet train --config configs/exp3c_yolo11n_v2_640_30ep.yaml   # ~15 phút trên RTX 4060 Laptop
+python -m vehicledet evaluate --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt --split v2 --part val
+python -m vehicledet analyze-errors --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt
 ```
 
-`docker/Dockerfile.gpu` (profile `gpu`) mới được viết, **chưa kiểm thử**. API đã được chạy thật với model `exp3c`
-(ONNX Runtime GPU và Docker CPU cho cùng kết quả; độ khớp với Ultralytics: `reports/serve_parity.json`).
-Lần gọi đầu trên GPU chậm (khởi tạo), nên cần warm-up khi triển khai. Đưa demo lên Hugging Face
-Spaces: [docs/HF_SPACES.md](docs/HF_SPACES.md).
+Mỗi lần huấn luyện được lưu vào `runs/` và MLflow (`mlflow ui --backend-store-uri sqlite:///mlflow.db`), kèm
+báo cáo gọn trong `reports/experiments/`. Các cấu hình thí nghiệm khác nằm ở `configs/`.
 
-## Cấu trúc repo
-
-```
-configs/        data.yaml (tên lớp), exp*.yaml (mỗi file = một thí nghiệm, chỉ đổi một thứ)
-src/vehicledet/ data/ (audit, dedup, make_split...), train, evaluate, export, benchmark, serve/
-splits/         danh sách ảnh theo tập: legacy/ và v2/ (train/val/test)
-scripts/        setup_env.sh, run_experiments.sh, summarize_runs.py, check_serve_parity.py
-tests/          pytest (dữ liệu giả, không cần GPU/dataset)
-reports/        kết quả đo (json/csv/png nhỏ) – nguồn của mọi số liệu
-docker/ docs/   Dockerfile CPU/GPU; hướng dẫn TensorRT, Hugging Face Spaces, quay demo
-```
-
-## Kiểm thử và CI
+Tập test chỉ dùng được một lần, sau khi đã chọn xong model:
 
 ```bash
-python -m pytest                 # 124 test, không cần GPU/dataset
+python -m vehicledet evaluate --weights <đường dẫn best.pt> --split v2 --part test --final
+```
+
+### 4. Xuất model và đo tốc độ
+
+```bash
+# Xuất ONNX (chạy được trên CPU)
+python -m vehicledet export --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt \
+    --tag exp3c --formats onnx --device cpu
+
+# Xuất thêm TensorRT FP16/INT8 và đo tốc độ (cần GPU NVIDIA + TensorRT, xem docs/TENSORRT_SETUP.md)
+python -m vehicledet export --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt --tag exp3c
+python -m vehicledet benchmark --model-dir exports/exp3c
+```
+
+### 5. Chạy API và demo
+
+Model đã huấn luyện không đi kèm repo (file nặng và ràng buộc license), nên cần làm các bước trên để có
+`exports/exp3c/best.onnx`.
+
+```bash
+python -m vehicledet serve --model exports/exp3c/best.onnx        # API tại http://127.0.0.1:8000/docs
+python -m vehicledet demo  --model exports/exp3c/best.onnx        # giao diện web Gradio tại http://127.0.0.1:7860
+```
+
+Gọi API:
+
+```bash
+curl -F "file=@anh.jpg" "http://127.0.0.1:8000/predict?conf=0.25"
+```
+
+```json
+{
+  "image": {"width": 1200, "height": 755},
+  "detections": [
+    {"class_id": 2, "label": "military tank", "score": 0.6086,
+     "bbox": {"x1": 354.3, "y1": 261.4, "x2": 1041.0, "y2": 524.9}}
+  ],
+  "inference_ms": 42.48, "total_ms": 59.6, "backend": "onnxruntime (CPU)"
+}
+```
+
+- `POST /predict`: nhận ảnh JPEG/PNG/WebP/BMP, tham số `conf` (ngưỡng tin cậy) và `iou`; giới hạn kích thước
+  mặc định 10 MB (đổi bằng biến môi trường `MAX_UPLOAD_MB`). Lỗi trả về rõ ràng: 400 (ảnh không hợp lệ),
+  413 (quá lớn), 422 (tham số sai), 503 (model chưa nạp).
+- `GET /health`: kiểm tra dịch vụ và model đã sẵn sàng chưa.
+
+### Chạy bằng Docker (CPU)
+
+```bash
+mkdir -p models && cp exports/exp3c/best.onnx models/best.onnx
+docker compose up --build api                    # API  -> http://localhost:8000/docs
+docker compose --profile demo up --build demo    # demo -> http://localhost:7860
+```
+
+Image CPU nhỏ (~760 MB), không chứa PyTorch hay Ultralytics.
+
+## Cấu trúc thư mục
+
+```
+configs/        cấu hình từng thí nghiệm (YAML) và tên 6 lớp
+src/vehicledet/ mã nguồn: data/ (kiểm tra, chia tập), train, evaluate, export, benchmark, serve/ (API, demo)
+splits/         danh sách ảnh của từng tập train/val/test
+scripts/        cài môi trường, chạy hàng loạt thí nghiệm, tổng hợp kết quả
+tests/          124 bài kiểm thử (dùng dữ liệu giả, không cần GPU hay dataset)
+reports/        toàn bộ kết quả đo (json, csv, ảnh): nguồn của mọi con số trong tài liệu này
+docker/ docs/   Dockerfile, hướng dẫn cài TensorRT
+```
+
+## Kiểm thử
+
+```bash
+python -m pytest                      # 124 bài kiểm thử, chạy trên CPU, không cần dataset
 ruff check . && ruff format --check .
 ```
 
-GitHub Actions (`.github/workflows/ci.yml`) chạy ruff + pytest trên CPU, không cần dataset hay GPU.
+GitHub Actions (`.github/workflows/ci.yml`) tự chạy `ruff` và `pytest` mỗi lần push.
 
 ## Tài liệu
 
-[DATASET.md](DATASET.md) (dataset card) · [MODEL_CARD.md](MODEL_CARD.md) · [docs/](docs/)
+[DATASET.md](DATASET.md) (mô tả dữ liệu, các vấn đề đã phát hiện) · [MODEL_CARD.md](MODEL_CARD.md) (mục đích,
+giới hạn, sử dụng có trách nhiệm) · [docs/TENSORRT_SETUP.md](docs/TENSORRT_SETUP.md)
 
 ## Giới hạn và sử dụng có trách nhiệm
 
-Project phục vụ học tập/nghiên cứu về computer vision trên ảnh công khai. Không dùng để ra quyết định
-giám sát hay quân sự thực tế: phân loại "quân sự/dân sự" theo hình dạng có thể sai, và sai sót có hậu
-quả nghiêm trọng. Chi tiết: [MODEL_CARD.md](MODEL_CARD.md).
+- Kết quả đến từ một lần huấn luyện (một seed) và các tập kiểm định/test chỉ khoảng 680 ảnh, chưa có khoảng
+  tin cậy; số liệu tốc độ phụ thuộc xung nhịp của GPU laptop (có thể dao động vài lần giữa các lần đo).
+- Dữ liệu là ảnh thu thập từ web, ít vật thể nhỏ, chưa kiểm tra với ảnh vệ tinh, UAV hay ban đêm; phân loại
+  "quân sự/dân sự" theo hình dạng có thể sai.
+- Project chỉ phục vụ học tập và nghiên cứu về thị giác máy tính trên ảnh công khai. Không dùng để ra quyết
+  định giám sát hay quân sự thực tế.
 
 ## License
 
-- Mã dùng **Ultralytics (AGPL-3.0)**: nếu phân phối code hoặc weights huấn luyện bằng Ultralytics, cần
-  tuân thủ AGPL-3.0 (hoặc có giấy phép doanh nghiệp của Ultralytics).
-- Dataset: **CC BY 4.0** (Gupta, Pareek, Singal, Rao; DRDO Institute for System Studies and Analyses).
-  Ảnh gốc có thể có bản quyền riêng; không phân phối lại ảnh.
-- Chưa chọn license cho mã nguồn của riêng repo này.
+- Mã dùng **Ultralytics (AGPL-3.0)**: nếu phân phối mã hoặc trọng số huấn luyện bằng Ultralytics thì cần tuân
+  thủ AGPL-3.0 (hoặc có giấy phép doanh nghiệp của Ultralytics).
+- Dataset: **CC BY 4.0** (Gupta, Pareek, Singal, Rao; DRDO Institute for System Studies and Analyses). Ảnh gốc
+  có thể có bản quyền riêng; không phân phối lại ảnh.
+- Chưa chọn license cho mã nguồn riêng của repo này.
