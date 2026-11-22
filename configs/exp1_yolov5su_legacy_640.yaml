@@ -5,8 +5,9 @@ seed: 0
 project: runs/detect   # tương đối so với gốc repo (được .gitignore)
 name: exp1_yolov5su_legacy_640
 train:
-  epochs: 20           # tối đa 20 theo yêu cầu; early stopping dừng sớm nếu val không cải thiện
-  patience: 10
+  epochs: 15           # tối đa 15 (laptop: giảm tải nhiệt); early stopping dừng sớm nếu val không cải thiện
+  patience: 8
+  close_mosaic: 5      # tắt mosaic ở 5 epoch cuối (mặc định 10 sẽ tắt gần hết nửa sau của 15 epoch)
   imgsz: 640
   batch: 16            # 8 GB VRAM
   workers: 4

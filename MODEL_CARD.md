@@ -35,8 +35,8 @@ Nguồn, thống kê và các vấn đề đã phát hiện: xem [DATASET.md](DA
 
 ## Huấn luyện
 
-Cấu hình trong `configs/exp*.yaml`: seed 0, `deterministic`, tối đa 20 epoch với early stopping
-(patience 10), batch 16 (8 cho imgsz 960), AdamW/SGD tự chọn bởi Ultralytics (`optimizer=auto`), phần cứng
+Cấu hình trong `configs/exp*.yaml`: seed 0, `deterministic`, tối đa 15 epoch với early stopping
+(patience 8, `close_mosaic` 5), batch 16 (8 cho imgsz 960), AdamW/SGD tự chọn bởi Ultralytics (`optimizer=auto`), phần cứng
 RTX 4060 Laptop 8 GB. Mỗi run lưu config, phiên bản thư viện và git commit
 (`vehicledet_run.json`, MLflow). Tên model được chọn **chỉ dựa trên tập val**.
 
