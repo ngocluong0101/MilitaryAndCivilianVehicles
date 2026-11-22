@@ -10,9 +10,8 @@ Trọng tâm của project là **quy trình phát triển model bài bản**, kh
 lượng dữ liệu → chia tập không rò rỉ → thí nghiệm có đối chứng → phân tích lỗi → export và đo tốc độ →
 phục vụ model. Tiến độ và số liệu chi tiết: [ROADMAP.md](ROADMAP.md).
 
-> **Trạng thái kết quả:** phần dữ liệu đã hoàn tất và có số liệu thật (bên dưới). Các lượt train, kết
-> quả trên tập test, phân tích lỗi và benchmark GPU **chưa chạy** nên các bảng tương ứng ghi
-> "chưa đo". Repo không điền số ước đoán; mọi con số lấy từ file trong `reports/`.
+> **Trạng thái kết quả:** dữ liệu và 4 thí nghiệm train trên val đã có số liệu thật (bên dưới). Kết quả
+> trên tập test, phân tích lỗi và benchmark GPU **chưa chạy** nên các bảng tương ứng ghi "chưa đo". Repo không điền số ước đoán; mọi con số lấy từ file trong `reports/`.
 
 ## Bài toán và điểm đáng chú ý
 
@@ -50,8 +49,20 @@ flowchart LR
 
 ### Thí nghiệm trên val (chọn model)
 
-Bảng tự sinh trong [ROADMAP.md](ROADMAP.md#thí-nghiệm-chọn-trên-val-dòng-cuối--kết-quả-test-của-model-được-chọn)
-từ `reports/experiments/`. **Chưa đo** (chưa chạy train).
+15 epoch, seed 0, imgsz 640, mỗi lượt đổi một thứ; nguồn `reports/experiments/*/val.json` (bảng tự sinh,
+cũng nằm trong [ROADMAP.md](ROADMAP.md)):
+
+| Lượt | Model | Val | mAP50 | mAP50-95 | Lớp yếu nhất (AP50-95) | Train |
+|---|---|---|---|---|---|---|
+| exp1 | yolov5su | cũ (bị rò rỉ) | 0,792 | 0,540 | civilian aircraft (0,459) | 15 phút |
+| exp2 | yolov5su | mới (sạch) | 0,755 | 0,459 | civilian aircraft (0,380) | 14 phút |
+| exp3a | YOLO11n | mới (sạch) | 0,771 | **0,468** | civilian aircraft (0,402) | 9 phút |
+| exp3b | YOLO11s | mới (sạch) | 0,770 | 0,465 | civilian aircraft (0,383) | 15 phút |
+
+Cách đọc: (1) exp1 so với exp2 cho thấy chiều hướng val cũ cho số cao hơn (≈ +0,08 mAP50-95), nhưng hai
+lượt dùng hai val và hai train khác nhau nên đây **không phải phép đo sạch**. (2) Ba model trên val sạch
+chỉ cách nhau 0,009 (một seed, val 681 ảnh) nên chưa phân biệt được về thống kê. (3) Mọi lượt có epoch tốt
+nhất là epoch cuối và mAP còn tăng, tức **chưa hội tụ** ở 15 epoch. Chưa chạy lượt imgsz 960.
 
 ### Kết quả cuối trên tập test
 

@@ -1,0 +1,61 @@
+{
+  "name": "exp3a_yolo11n_v2_640",
+  "config": {
+    "model": "yolo11n.pt",
+    "split": "v2",
+    "seed": 0,
+    "project": "runs/detect",
+    "name": "exp3a_yolo11n_v2_640",
+    "train": {
+      "epochs": 15,
+      "patience": 8,
+      "close_mosaic": 5,
+      "imgsz": 640,
+      "batch": 16,
+      "workers": 4,
+      "deterministic": true,
+      "plots": true
+    }
+  },
+  "train_args": {
+    "epochs": 15,
+    "patience": 8,
+    "close_mosaic": 5,
+    "imgsz": 640,
+    "batch": 16,
+    "workers": 4,
+    "deterministic": true,
+    "plots": true,
+    "data": "<repo>/data/yolo/v2/data.yaml",
+    "seed": 0,
+    "project": "<repo>/runs/detect",
+    "name": "exp3a_yolo11n_v2_640"
+  },
+  "dataset_counts": {
+    "train": 5412,
+    "val": 681,
+    "test": 679
+  },
+  "env": {
+    "python": "3.12.3",
+    "platform": "Linux-7.0.0-43-generic-x86_64-with-glibc2.39",
+    "packages": {
+      "torch": "2.15.0",
+      "torchvision": "0.29.2",
+      "ultralytics": "8.4.216",
+      "numpy": "2.5.5",
+      "opencv-python": "5.1.0.95",
+      "PyYAML": "6.0.4"
+    },
+    "cuda": "13.2",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "git_commit": "c917a67de381bd1eff86a29d991cdf74ae174414",
+    "git_dirty": true
+  },
+  "train_minutes": 9.0,
+  "epochs_ran": 15,
+  "best_epoch": 15,
+  "early_stopped": false,
+  "weights": "<repo>/runs/detect/exp3a_yolo11n_v2_640/weights/best.pt",
+  "mlflow_run_id": "ea2b6a7e51864d518ff2fce36163bec6"
+}

@@ -127,10 +127,10 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - [x] Config thí nghiệm `configs/exp1…exp4` (mỗi file đổi một thứ) + `scripts/run_experiments.sh` (chạy tuần tự, bỏ qua cái đã xong)
 - [x] `scripts/summarize_runs.py` → bảng vào ROADMAP (giữa cặp marker `EXPERIMENTS`)
 - [x] Tải sẵn weights (`weights/`: yolov5su, yolo11n, yolo11s)
-- [ ] **Chạy** thí nghiệm trên val: (1) yolov5su chia cũ, (2) yolov5su chia mới, (3) YOLO11n/s, (4) imgsz 640 vs 960 – *chưa chạy, cần GPU*
+- [x] **Đã chạy** thí nghiệm 1, 2, 3a, 3b trên val (15 epoch, tổng ~69 phút gồm nghỉ; bảng ở mục Số liệu). **Thí nghiệm 4 (imgsz 960) chưa chạy** – tuỳ chọn, laptop
 - [ ] (5) Xử lý mất cân bằng lớp – *chưa cần theo audit (xem Quyết định 2026-11-22); chỉ làm nếu AP từng lớp cho thấy*
-- [x] Chốt số epoch/early stopping: **20 epoch, patience 10** (theo yêu cầu của bạn, 2026-11-22). Thời gian train thực tế vẫn cần ghi khi chạy
-- [ ] Chạy model được chọn **một lần** trên test → `reports/test_results.json`
+- [x] Chốt số epoch/early stopping: **15 epoch, patience 8, close_mosaic 5** (laptop nên giảm tải nhiệt; 2026-11-22). Thời gian train thực tế vẫn cần ghi khi chạy
+- [ ] Chạy model được chọn **một lần** trên test → `reports/test_results.json` (*chờ xác nhận model cuối; xem Quyết định 2026-11-22*)
 - [ ] Dừng và báo cáo
 
 ### Phase 4 – Phân tích lỗi
@@ -189,7 +189,10 @@ Sinh tự động từ `reports/experiments/*/` bằng `python scripts/summarize
 <!-- EXPERIMENTS:START (sinh bởi scripts/summarize_runs.py, đừng sửa tay) -->
 | # | Model | Split | imgsz | mAP50 | mAP50-95 | Lớp yếu nhất (AP50-95) | Thời gian train | Epoch | MLflow run |
 |---|---|---|---|---|---|---|---|---|---|
-| – | chưa chạy | | | | | | | | |
+| exp1_yolov5su_legacy_640 | yolov5su | legacy (val) | 640 | 0.792 | 0.540 | civilian aircraft (0.459) | 15 phút | 15 | `c2ad559e` |
+| exp2_yolov5su_v2_640 | yolov5su | v2 (val) | 640 | 0.755 | 0.459 | civilian aircraft (0.380) | 14 phút | 15 | `adebc1d7` |
+| exp3a_yolo11n_v2_640 | yolo11n | v2 (val) | 640 | 0.771 | 0.468 | civilian aircraft (0.402) | 9.0 phút | 15 | `ea2b6a7e` |
+| exp3b_yolo11s_v2_640 | yolo11s | v2 (val) | 640 | 0.770 | 0.465 | civilian aircraft (0.383) | 15 phút | 15 | `96484233` |
 <!-- EXPERIMENTS:END -->
 
 ### Benchmark (RTX 4060 Laptop 8 GB, input 1×3×640×640 letterbox)
@@ -213,7 +216,7 @@ Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadm
 - 2026-11-22: 67 ảnh không bbox được giữ làm ảnh nền trong `v2` (gần như đều là ảnh nền thật sau khi xem tay). Hệ quả: so sánh `legacy` vs `v2` ở Phase 3 khác nhau ở cả cách chia lẫn thành phần (v2 có thêm ảnh nền + 3 ảnh bị đổi tên) – phải ghi rõ khi báo cáo.
 - 2026-11-22: Phase 3 mục 5 (xử lý mất cân bằng lớp) **chưa cần**: lớp nhiều/ít nhất chỉ ≈ 1,8 lần theo bbox (2.428 vs 1.373) và mỗi tập có đủ cả 6 lớp. Chỉ làm nếu kết quả AP theo lớp cho thấy lớp yếu liên quan tới số lượng.
 
-- 2026-11-22: Đo thử 1 epoch yolo11s, imgsz 640, batch 16, train v2 (5.412 ảnh): ~65 giây/epoch (gồm val), VRAM đỉnh 3,97 GB. Ngoại suy (chưa đo riêng yolov5su/yolo11n/960): với **20 epoch**, mỗi thí nghiệm 640 ≈ 20–25 phút, 4 thí nghiệm 640 ≈ 1,5–2 giờ, thêm exp4 (960) ≈ 1 giờ. Đây là ước tính, không phải kết quả.
+- 2026-11-22: Đo thử 1 epoch yolo11s, imgsz 640, batch 16, train v2 (5.412 ảnh): ~65 giây/epoch (gồm val), VRAM đỉnh 3,97 GB. Ngoại suy (chưa đo riêng yolov5su/yolo11n/960): với **15 epoch**, mỗi thí nghiệm 640 ≈ 15–20 phút, 4 thí nghiệm 640 ≈ 1–1,3 giờ (+ ~15 phút nghỉ giữa các lượt); exp4 (960) ≈ 40 phút và là tuỳ chọn. Đây là ước tính, không phải kết quả.
 - 2026-11-22: Dùng Tracker MLflow riêng, gỡ callback MLflow tích hợp của Ultralytics (nó log cả weights và đặt tên experiment theo đường dẫn) – chỉ ở mức run, không đổi cấu hình toàn cục. `reports/experiments/*/run_info.json` dùng đường dẫn `<repo>/…` để không lộ đường dẫn máy.
 - 2026-11-22: Khoá tập test ngay trong code: `evaluate --part test` cần `--final`, chỉ ghi `reports/test_results.json` một lần.
 
@@ -223,9 +226,18 @@ Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadm
 - 2026-11-22: CI dùng `requirements-ci.txt` riêng (không torch/ultralytics) vì mọi test chạy được không cần chúng (import nặng đều để trễ); giữ job nhanh và rẻ.
 - 2026-11-22: Bullet CV và câu hỏi phỏng vấn đặt trong `myCV/` (riêng tư) thay vì trong repo công khai; không đưa bullet CV vào README/ROADMAP.
 
-- 2026-11-22: Người dùng chốt **20 epoch** (thay cho 60). Cập nhật `configs/exp*.yaml` (epochs 20, patience 10) và MODEL_CARD. Lưu ý: với 20 epoch, warm-up mặc định 3 epoch chiếm 15% và `close_mosaic` mặc định 10 nghĩa là nửa sau không dùng mosaic; giữ mặc định cho mọi run nên so sánh vẫn công bằng, nhưng mAP có thể thấp hơn so với train dài hơn.
+- 2026-11-22: Người dùng chốt **20 epoch** (thay cho 60); sau đó giảm tiếp còn 15 epoch (mục kế tiếp). Cập nhật `configs/exp*.yaml` (epochs 20, patience 10) và MODEL_CARD. Lưu ý: với 20 epoch, warm-up mặc định 3 epoch chiếm 15% và `close_mosaic` mặc định 10 nghĩa là nửa sau không dùng mosaic; giữ mặc định cho mọi run nên so sánh vẫn công bằng, nhưng mAP có thể thấp hơn so với train dài hơn.
+
+- 2026-11-22: Người dùng chỉ có laptop, lo máy nóng khi train nhiều → đề xuất và áp dụng: **15 epoch** (patience 8, `close_mosaic` 5, mọi lượt như nhau), chỉ chạy 4 lượt 640 (exp4 960 là tuỳ chọn), `scripts/run_experiments.sh` nghỉ 300 giây giữa các lượt và in nhiệt độ GPU. Lý do giảm epoch: project phục vụ phỏng vấn, giá trị nằm ở quy trình đối chứng chứ không ở mAP tuyệt đối; khởi tạo từ COCO nên 15 epoch đủ để so sánh. Chưa đo được nhiệt độ máy người dùng.
+
+- 2026-11-22: Kết quả 4 thí nghiệm (val, 15 epoch, seed 0; nguồn `reports/experiments/*/val.json`): trên val sạch v2, yolov5su 0,459 · YOLO11n **0,468** · YOLO11s 0,465 mAP50-95. Theo quy tắc (chọn theo mAP50-95 trên val) model được chọn là **YOLO11n**; nhưng ba model chỉ cách nhau 0,009 (một seed, val 681 ảnh/1.068 bbox) nên **không phân biệt được về mặt thống kê**; YOLO11n được ưu tiên thêm vì nhỏ nhất và nhanh nhất (train ~9 phút; thời gian inference trong lúc val 2,1 ms/ảnh so với 8,4 ms của YOLO11s). Chưa chạy test.
+- 2026-11-22: Mọi lượt đều có epoch tốt nhất là epoch 15/15 và mAP50-95 còn tăng ở các epoch cuối (vd YOLO11n: 0,409 → 0,465 trong 5 epoch cuối) ⇒ **chưa hội tụ**, mAP tuyệt đối chắc chắn thấp hơn mức tối đa; so sánh giữa các model vẫn công bằng (cùng ngân sách) nhưng thứ hạng có thể đổi nếu train dài hơn.
+- 2026-11-22: Tác động rò rỉ (ước lượng chiều hướng, **không phải phép đo sạch** vì hai val và hai train khác nhau): exp1 (val cũ, rò rỉ) 0,540 vs exp2 (val v2, sạch) 0,459 mAP50-95, chênh ≈ 0,08; mAP50 0,792 vs 0,755. Lớp giảm nhiều nhất: civilian car (0,687 → 0,450).
 
 ## Vấn đề còn mở
+- **Chưa chạy test** (cần bạn xác nhận model cuối: đề xuất YOLO11n). Test chỉ chạy một lần.
+- **Mô hình chưa hội tụ ở 15 epoch** (epoch tốt nhất luôn là cuối). Nếu muốn mAP cao hơn: chạy thêm một lượt dài hơn (vd 30 epoch) cho model cuối; ghi rõ là thí nghiệm phụ.
+- Lớp yếu nhất ở cả 4 lượt là **civilian aircraft** (AP50-95 0,38–0,46); ma trận nhầm lẫn gợi ý civilian aircraft hay bị dự đoán thành military aircraft (cần phân tích ở ngưỡng conf thực tế trong bước phân tích lỗi, chưa kết luận).
 - **Toàn bộ kết quả mô hình vẫn "chưa đo"** (train, test, phân tích lỗi, benchmark GPU). README/MODEL_CARD/bullet CV số 4 đang chờ các số này.
 - Workflow CI chưa chạy trên GitHub; phiên bản action (`checkout@v4`, `setup-python@v5`) chưa kiểm chứng bằng một lần chạy thật.
 - `.venv` chưa có TensorRT và onnxruntime-gpu (cần cài tay, xem `docs/TENSORRT_SETUP.md`); tới lúc đó các dòng TensorRT/ONNX-GPU trong benchmark là "chưa đo".
