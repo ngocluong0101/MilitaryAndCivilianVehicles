@@ -31,7 +31,9 @@ def main() -> None:
             f"Tốt nhất theo mAP50-95 trên val (split v2, imgsz 640): {best['name']} "
             f"({best['mAP50-95']:.3f})"
         )
-    if args.roadmap:
+    if args.roadmap and not args.roadmap.is_file():
+        print(f"Bỏ qua cập nhật: không có file {args.roadmap} (file giữ cục bộ, ngoài git)")
+    elif args.roadmap:
         text = args.roadmap.read_text(encoding="utf-8")
         args.roadmap.write_text(replace_marked_block(text, table), encoding="utf-8")
         print(f"Đã cập nhật {args.roadmap}")

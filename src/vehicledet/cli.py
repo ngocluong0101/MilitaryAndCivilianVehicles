@@ -288,7 +288,9 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         table = render_benchmark_table(rows)
         print(table)
-        if args.roadmap:
+        if args.roadmap and not Path(args.roadmap).is_file():
+            print(f"Bỏ qua cập nhật: không có file {args.roadmap} (file này giữ cục bộ, ngoài git)")
+        elif args.roadmap:
             path = Path(args.roadmap)
             path.write_text(
                 replace_marked_block(

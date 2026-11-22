@@ -10,7 +10,7 @@
 |---|---|
 | Nhiệm vụ | Phát hiện vật thể (bbox + lớp), 6 lớp |
 | Lớp | `military truck`, `civilian car`, `military tank`, `civilian aircraft`, `military aircraft`, `military helicopter` |
-| Họ model | Ultralytics **YOLO11n** (2,6 triệu tham số), chọn bằng mAP50-95 trên val trong số yolov5su, YOLO11n, YOLO11s (ba model cách nhau ≤ 0,009 ở 15 epoch; xem ROADMAP) |
+| Họ model | Ultralytics **YOLO11n** (2,6 triệu tham số), chọn bằng mAP50-95 trên val trong số yolov5su, YOLO11n, YOLO11s (ba model cách nhau ≤ 0,009 ở 15 epoch; xem `reports/experiments_summary.md`) |
 | Khởi tạo | Trọng số COCO pretrained của Ultralytics |
 | Input | Ảnh RGB, letterbox về 640×640 (có thể 960 nếu thí nghiệm imgsz cho kết quả tốt hơn) |
 | Phiên bản | thí nghiệm `exp3c_yolo11n_v2_640_30ep` (seed 0); chưa phát hành bản chính thức |
@@ -122,7 +122,7 @@ Nguồn `reports/benchmark.csv` (trung vị 3 vòng, mỗi lần đo một tiế
   precision bị đánh giá thấp và model có thể bị "phạt" khi phát hiện đúng vật thể chưa có nhãn. Không có đánh
   giá độc lập về độ chính xác của nhãn.
 - **Độ không chắc chắn của kết quả:** một seed, val/test chỉ ~680 ảnh; chưa đo khoảng tin cậy; model chưa
-  hội tụ hoàn toàn (xem ROADMAP).
+  hội tụ hoàn toàn (xem `reports/experiments/*/results.csv`).
 - **Tiền xử lý của API khác Ultralytics một chút** (Pillow vs OpenCV resize): bbox điểm ≥ 0,6 khớp IoU > 0,9 ở 96%
   (`reports/serve_parity.json`), điểm thấp lệch nhiều hơn; ảnh hưởng tới mAP chưa đo
   với model thật.
