@@ -5,8 +5,8 @@ seed: 0
 project: runs/detect   # tương đối so với gốc repo (được .gitignore)
 name: exp1_yolov5su_legacy_640
 train:
-  epochs: 60           # tối đa; early stopping dừng sớm nếu val không cải thiện
-  patience: 15
+  epochs: 20           # tối đa 20 theo yêu cầu; early stopping dừng sớm nếu val không cải thiện
+  patience: 10
   imgsz: 640
   batch: 16            # 8 GB VRAM
   workers: 4

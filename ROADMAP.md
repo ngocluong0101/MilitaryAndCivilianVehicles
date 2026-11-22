@@ -129,7 +129,7 @@ Lịch sử: 6 commit (upload → sửa path cứng trong yaml → sửa rò r�
 - [x] Tải sẵn weights (`weights/`: yolov5su, yolo11n, yolo11s)
 - [ ] **Chạy** thí nghiệm trên val: (1) yolov5su chia cũ, (2) yolov5su chia mới, (3) YOLO11n/s, (4) imgsz 640 vs 960 – *chưa chạy, cần GPU*
 - [ ] (5) Xử lý mất cân bằng lớp – *chưa cần theo audit (xem Quyết định 2026-11-22); chỉ làm nếu AP từng lớp cho thấy*
-- [ ] Chốt số epoch/early stopping (đang đặt tạm 60 / patience 15, chờ bạn xác nhận) và ghi thời gian train
+- [x] Chốt số epoch/early stopping: **20 epoch, patience 10** (theo yêu cầu của bạn, 2026-11-22). Thời gian train thực tế vẫn cần ghi khi chạy
 - [ ] Chạy model được chọn **một lần** trên test → `reports/test_results.json`
 - [ ] Dừng và báo cáo
 
@@ -213,7 +213,7 @@ Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadm
 - 2026-11-22: 67 ảnh không bbox được giữ làm ảnh nền trong `v2` (gần như đều là ảnh nền thật sau khi xem tay). Hệ quả: so sánh `legacy` vs `v2` ở Phase 3 khác nhau ở cả cách chia lẫn thành phần (v2 có thêm ảnh nền + 3 ảnh bị đổi tên) – phải ghi rõ khi báo cáo.
 - 2026-11-22: Phase 3 mục 5 (xử lý mất cân bằng lớp) **chưa cần**: lớp nhiều/ít nhất chỉ ≈ 1,8 lần theo bbox (2.428 vs 1.373) và mỗi tập có đủ cả 6 lớp. Chỉ làm nếu kết quả AP theo lớp cho thấy lớp yếu liên quan tới số lượng.
 
-- 2026-11-22: Đo thử 1 epoch yolo11s, imgsz 640, batch 16, train v2 (5.412 ảnh): ~65 giây/epoch (gồm val), VRAM đỉnh 3,97 GB. Ngoại suy 4 thí nghiệm 640 ≈ 6–7 giờ với 60 epoch (chưa đo riêng yolov5su/yolo11n/960). Đây là ước tính, không phải kết quả.
+- 2026-11-22: Đo thử 1 epoch yolo11s, imgsz 640, batch 16, train v2 (5.412 ảnh): ~65 giây/epoch (gồm val), VRAM đỉnh 3,97 GB. Ngoại suy (chưa đo riêng yolov5su/yolo11n/960): với **20 epoch**, mỗi thí nghiệm 640 ≈ 20–25 phút, 4 thí nghiệm 640 ≈ 1,5–2 giờ, thêm exp4 (960) ≈ 1 giờ. Đây là ước tính, không phải kết quả.
 - 2026-11-22: Dùng Tracker MLflow riêng, gỡ callback MLflow tích hợp của Ultralytics (nó log cả weights và đặt tên experiment theo đường dẫn) – chỉ ở mức run, không đổi cấu hình toàn cục. `reports/experiments/*/run_info.json` dùng đường dẫn `<repo>/…` để không lộ đường dẫn máy.
 - 2026-11-22: Khoá tập test ngay trong code: `evaluate --part test` cần `--final`, chỉ ghi `reports/test_results.json` một lần.
 
@@ -222,6 +222,8 @@ Sinh từ `reports/benchmark.csv` bằng `python -m vehicledet benchmark --roadm
 
 - 2026-11-22: CI dùng `requirements-ci.txt` riêng (không torch/ultralytics) vì mọi test chạy được không cần chúng (import nặng đều để trễ); giữ job nhanh và rẻ.
 - 2026-11-22: Bullet CV và câu hỏi phỏng vấn đặt trong `myCV/` (riêng tư) thay vì trong repo công khai; không đưa bullet CV vào README/ROADMAP.
+
+- 2026-11-22: Người dùng chốt **20 epoch** (thay cho 60). Cập nhật `configs/exp*.yaml` (epochs 20, patience 10) và MODEL_CARD. Lưu ý: với 20 epoch, warm-up mặc định 3 epoch chiếm 15% và `close_mosaic` mặc định 10 nghĩa là nửa sau không dùng mosaic; giữ mặc định cho mọi run nên so sánh vẫn công bằng, nhưng mAP có thể thấp hơn so với train dài hơn.
 
 ## Vấn đề còn mở
 - **Toàn bộ kết quả mô hình vẫn "chưa đo"** (train, test, phân tích lỗi, benchmark GPU). README/MODEL_CARD/bullet CV số 4 đang chờ các số này.
