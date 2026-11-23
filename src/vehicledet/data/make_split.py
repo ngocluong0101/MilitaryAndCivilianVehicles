@@ -146,7 +146,7 @@ def compare_report(
     dup_groups: list[list[str]],
     hashes: dict[str, dict],
 ) -> dict:
-    """Thống kê + rò rỉ cho nhiều cách chia (legacy, v2...)."""
+    """Thống kê + rò rỉ cho nhiều cách chia (v2, ...)."""
     out = {}
     for name, split in splits.items():
         split_of = {n: p for p, names in split.items() for n in names}

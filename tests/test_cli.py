@@ -4,7 +4,7 @@
 
 import pytest
 
-from vehicledet.cli import build_parser, main
+from vehicledet.cli import build_parser
 
 
 def test_parser_requires_command():
@@ -37,17 +37,3 @@ def test_parser_evaluate_and_train_flags():
     assert t.override == ["epochs=1"]
     with pytest.raises(SystemExit):
         pr.parse_args(["evaluate", "--weights", "w.pt", "--split", "v2", "--part", "other"])
-
-
-def test_make_legacy_split_end_to_end(fake_dataset, tmp_path, monkeypatch, capsys):
-    # default SPLITS_DIR được gán lúc định nghĩa hàm -> ép ghi vào tmp_path
-    from vehicledet.data import splits
-
-    monkeypatch.setattr(
-        "vehicledet.cli.write_legacy_split",
-        lambda root: splits.write_legacy_split(root, tmp_path / "splits"),
-    )
-    assert main(["make-legacy-split", "--data-root", str(fake_dataset)]) == 0
-    out = capsys.readouterr().out
-    assert "train=3 val=2" in out and "g.jpg" in out
-    assert (tmp_path / "splits" / "legacy" / "train.txt").exists()

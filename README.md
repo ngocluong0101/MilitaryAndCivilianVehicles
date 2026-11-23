@@ -7,7 +7,7 @@ cho biết đó là loại nào trong 6 loại — `military truck` (xe tải qu
 `military tank` (xe tăng), `civilian aircraft` (máy bay dân dụng), `military aircraft` (máy bay quân sự),
 `military helicopter` (trực thăng quân sự). Xây dựng trên [Ultralytics YOLO](https://github.com/ultralytics/ultralytics).
 
-Project đi qua đủ vòng đời của một model thị giác máy tính: **kiểm tra dữ liệu → chia tập đúng cách →
+Project đi qua : **kiểm tra dữ liệu → chia tập đúng cách →
 huấn luyện → đánh giá**.
 
 ```mermaid
@@ -56,13 +56,7 @@ flowchart LR
 | exp3b | YOLO11s, 15 epoch | 0,465 |
 | **exp3c** | **YOLO11n, 30 epoch** (model được chọn) | **0,480** |
 
-Nguồn: `reports/experiments_summary.md` và `reports/experiments/` (kết quả đã đo, lưu tĩnh).
-
-### Phân tích lỗi
-
-Lỗi model hay gặp nhất là nhầm máy bay dân dụng thành máy bay quân sự (28 trên tổng 76 ca nhầm lớp), nhiều ca
-vốn mơ hồ ngay cả với người xem. Nhiều trường hợp "phát hiện thừa" thực chất là vật thể thật mà dataset
-chưa gán nhãn. Số liệu đo bằng công cụ đã gỡ khỏi repo (còn trong git history): [reports/error_analysis/error_analysis.md](reports/error_analysis/error_analysis.md).
+Nguồn: `reports/experiments_summary.md` và `reports/experiments/` (chỉ còn chi tiết của exp3c; bảng tổng hợp có đủ các lượt).
 
 ## Bắt đầu nhanh
 
@@ -97,7 +91,7 @@ python -m vehicledet evaluate --weights runs/detect/exp3c_yolo11n_v2_640_30ep/we
 ```
 
 Mỗi lần huấn luyện được lưu vào `runs/`, kèm báo cáo gọn trong `reports/experiments/<tên>/`. Config chỉ còn
-model cuối (`exp3c`); các config thí nghiệm so sánh cũ (exp1–exp6) nằm trong git history.
+model cuối (`exp3c`); các config thí nghiệm so sánh cũ (exp1–exp6) và kết quả chi tiết của chúng nằm trong git history.
 
 Tập test chỉ dùng được một lần, sau khi đã chọn xong model:
 

@@ -20,7 +20,6 @@ from vehicledet.data.make_split import (
     render_markdown,
     write_split,
 )
-from vehicledet.data.splits import read_split
 from vehicledet.paths import REPORTS_DIR, SPLITS_DIR, class_names, images_dir
 
 log = logging.getLogger(__name__)
@@ -34,14 +33,7 @@ def run_audit(data_root: Path, out_dir: Path = REPORTS_DIR) -> dict:
     return write_audit(data_root, out_dir)
 
 
-def _split_of(name: str) -> dict[str, str] | None:
-    d = SPLITS_DIR / name
-    if not (d / "train.txt").is_file():
-        return None
-    return {n: p for p, names in read_split(name).items() for n in names}
-
-
-def _duplicates_markdown(res: dict, legacy: dict | None, montages: list[str]) -> str:
+def _duplicates_markdown(res: dict) -> str:
     s, p = res["summary"], res["params"]
     L = [
         "# Ảnh trùng / gần trùng",
@@ -82,22 +74,6 @@ def _duplicates_markdown(res: dict, legacy: dict | None, montages: list[str]) ->
     ]
     for t, v in s["sensitivity_phash16_only"].items():
         L.append(f"| {t} | {v['groups']:,} | {v['images_in_groups']:,} | {v['largest_group']} |")
-    if legacy:
-        lk = legacy["leakage_phash16"]
-        L += [
-            "",
-            "## Rò rỉ trong cách chia cũ (`splits/legacy`)",
-            "",
-            f"- Nhóm gần trùng nằm ở cả train và val: **{lk['groups_spanning_splits']}**",
-        ]
-        for a, v in lk["images_with_dup_in"].items():
-            for b, n in v.items():
-                L.append(f"- Ảnh `{a}` có bản gần trùng trong `{b}`: **{n}**")
-        for a, n in lk["images_with_dup_in_same_split"].items():
-            L.append(f"- Ảnh `{a}` có bản gần trùng khác trong chính `{a}`: **{n}**")
-    if montages:
-        L += ["", "## Ví dụ (chữ đỏ = tập theo cách chia cũ, nếu có)", ""]
-        L += [f"![{m}](duplicates/{m})" for m in montages]
     return "\n".join(L) + "\n"
 
 
@@ -108,23 +84,11 @@ def run_find_duplicates(
     hashes = dedup.compute_hashes(images_dir(data_root), names, hash_cache_path(data_root))
     res = dedup.find_duplicate_groups(hashes, threshold)
 
-    legacy_of = _split_of("legacy")
-    legacy = None
-    if legacy_of:
-        groups = [g["members"] for g in res["groups"]]
-        legacy = {"leakage_phash16": dedup.cross_split_leakage(groups, legacy_of)}
-        res["legacy_split_leakage"] = legacy["leakage_phash16"]
-
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "duplicates.json").write_text(
         json.dumps(res, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"
     )
-    montages = dedup.save_group_montages(
-        images_dir(data_root), res["groups"], out_dir / "duplicates", legacy_of
-    )
-    (out_dir / "duplicates.md").write_text(
-        _duplicates_markdown(res, legacy, montages), encoding="utf-8"
-    )
+    (out_dir / "duplicates.md").write_text(_duplicates_markdown(res), encoding="utf-8")
     return res
 
 
@@ -162,11 +126,7 @@ def run_make_split(
 
     names = [p.name for p in list_images(data_root)]
     hashes = dedup.compute_hashes(images_dir(data_root), names, hash_cache_path(data_root))
-    splits = {name: split}
-    legacy = _split_of("legacy")
-    if legacy:
-        splits = {"legacy": read_split("legacy"), **splits}
-    report = compare_report(splits, records, class_names(), dup_groups, hashes)
+    report = compare_report({name: split}, records, class_names(), dup_groups, hashes)
     (out_dir / "split_stats.json").write_text(
         json.dumps({"params": params, "splits": report}, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

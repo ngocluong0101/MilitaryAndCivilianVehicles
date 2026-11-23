@@ -12,7 +12,6 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import random
 from collections import defaultdict
 from pathlib import Path
 
@@ -203,47 +202,3 @@ def secondary_cross_split_pairs(
     names = sorted(n for n in hashes if n in split_of)
     pairs = hamming_pairs([hashes[n]["dhash8"] for n in names], 64, threshold)
     return sum(split_of[names[a]] != split_of[names[b]] for a, b, _ in pairs)
-
-
-def save_group_montages(
-    image_dir: Path,
-    groups: list[dict],
-    out_dir: Path,
-    split_of: dict[str, str] | None = None,
-    n_examples: int = 8,
-    seed: int = 0,
-    tile_h: int = 150,
-) -> list[str]:
-    """Lưu ảnh ghép nhỏ (JPEG) của một số nhóm tiêu biểu: nhóm lớn nhất + ngẫu nhiên."""
-    from PIL import ImageDraw
-
-    out_dir.mkdir(parents=True, exist_ok=True)
-    for old in out_dir.glob("group_*.jpg"):
-        old.unlink()
-    rng = random.Random(seed)
-    by_size = sorted(groups, key=lambda g: -len(g["members"]))
-    picks = by_size[:2] + rng.sample(by_size[2:], min(n_examples - 2, max(0, len(by_size) - 2)))
-    if split_of:  # ưu tiên có ví dụ nhóm trải qua nhiều tập
-        spanning = [g for g in groups if len({split_of.get(m) for m in g["members"]}) > 1]
-        picks = picks[: n_examples - 2] + rng.sample(spanning, min(2, len(spanning)))
-    saved = []
-    for k, g in enumerate(picks):
-        tiles = []
-        for m in g["members"][:5]:
-            with Image.open(image_dir / m) as im:
-                im = im.convert("RGB")
-                im.thumbnail((tile_h * 2, tile_h))
-                tiles.append((m, im.copy()))
-        canvas = Image.new(
-            "RGB", (sum(t.width for _, t in tiles) + 4 * len(tiles), tile_h + 14), "white"
-        )
-        x, draw = 0, ImageDraw.Draw(canvas)
-        for m, t in tiles:
-            canvas.paste(t, (x, 14))
-            label = (split_of or {}).get(m, "")
-            draw.text((x + 2, 1), label, fill="red")
-            x += t.width + 4
-        name = f"group_{k:02d}_n{len(g['members'])}.jpg"
-        canvas.save(out_dir / name, quality=70)
-        saved.append(name)
-    return saved

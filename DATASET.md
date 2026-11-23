@@ -61,7 +61,7 @@ trong** `train_labels.csv`.
 | # | Vấn đề | Mức độ | Xử lý |
 |---|---|---|---|
 | 1 | **Ảnh trùng/gần trùng rất nhiều**: 4.853/6.772 ảnh (71,7%) thuộc 2.345 nhóm gần trùng (nhóm lớn nhất 5 ảnh); chỉ ≈4.264 "bức ảnh khác nhau". 171 nhóm trùng byte (346 ảnh). Biến thể gồm khác watermark, màu, độ phân giải, crop/zoom | **Nghiêm trọng** | Chia tập theo nhóm (mục dưới) |
-| 2 | **Rò rỉ trong cách chia cũ**: 311 nhóm trải qua cả train và val; 322/496 ảnh val (64,9%) có bản gần trùng trong train. Đánh giá trên val cũ sẽ thổi phồng mAP | **Nghiêm trọng** | Chia lại (`splits/v2`); giữ `splits/legacy` để đo ảnh hưởng ở Phase 3 |
+| 2 | **Rò rỉ trong cách chia cũ**: 311 nhóm trải qua cả train và val; 322/496 ảnh val (64,9%) có bản gần trùng trong train. Đánh giá trên val cũ sẽ thổi phồng mAP | **Nghiêm trọng** | Chia lại (`splits/v2`); cách chia cũ đã gỡ khỏi repo (số liệu rò rỉ còn trong `reports/duplicates.md`) |
 | 3 | Chưa có test độc lập (val cũ = `test_labels.csv`) | Cao | `splits/v2` có train/val/test |
 | 4 | 4 file TXT lặp nguyên khối dòng (36 dòng trùng hệt: `images348`, `images358`, `images58`, `Kona_Pic_1-770x433`); CSV đúng | Thấp | Không sửa file; Ultralytics tự loại dòng trùng khi nạp nhãn |
 | 5 | CSV vs TXT: 6.624 ảnh khớp; 74 ảnh có bbox lệch nhẹ (IoU 0,5–0,9; mẫu quan sát thấp nhất 0,62); 4 ảnh lệch số bbox (chính là 4 ảnh ở mục 4) | Thấp | Dùng TXT; chỉ ghi nhận |

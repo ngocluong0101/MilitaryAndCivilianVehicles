@@ -73,23 +73,6 @@ hay coi 0,531 là con số chính xác. Chưa đo khoảng tin cậy.
 Lớp yếu nhất đổi chỗ giữa val (civilian aircraft) và test (military aircraft); mỗi lớp chỉ có ~130–250
 bbox mỗi tập nên chênh lệch từng lớp cỡ 0,05–0,1 chưa đủ cơ sở để kết luận lớp nào "thật sự" yếu hơn.
 
-### Các lớp hay nhầm (phân tích lỗi trên **val**, conf 0,25, IoU 0,5)
-
-Nguồn `reports/error_analysis/error_analysis.md`: 830 đúng, 76 nhầm lớp, 87 định vị sai, 27 trùng lặp,
-121 phát hiện thừa, 122 bỏ sót.
-
-- **Cặp nhầm lớn nhất:** civilian aircraft → military aircraft (28/76 ca nhầm lớp), tiếp theo military
-  aircraft → civilian aircraft (7), military tank → military truck (7), civilian car → military truck (7).
-  Qua gallery, nhiều ca là mơ hồ ngữ nghĩa (máy bay cánh tam giác, xe Hummer trắng, xe mô hình đồ chơi,
-  ảnh cắt cận cảnh mũi máy bay chở khách).
-- **"Phát hiện thừa" phần lớn là vật thể thật chưa được gán nhãn** (xe cảnh sát cùng ảnh với xe taxi đã gán
-  nhãn, hình vẽ trực thăng trong bản vẽ kỹ thuật, nhiều xe tăng trên poster): precision/AP đo được vì thế
-  thấp hơn so với chất lượng thật của model. Đã ghi nhận 12 ca nhãn đáng ngờ, **không sửa nhãn nào**.
-- **Đã thử khắc phục nhầm lớp** bằng cách tăng trọng số loss phân loại (`cls` 0,5 → 1,0): **không cải thiện**
-  (val mAP50-95 0,469 so với 0,480; nhầm lớp 79 so với 76), nên model cuối giữ cấu hình gốc. Chi tiết:
-  `reports/error_analysis/remedy_comparison.md`.
-- **Bỏ sót:** 122 GT, trong đó nhóm "ảnh nhiều vật thể" 49, "nhỏ" 31, "bị che" 28 (thẻ có thể chồng nhau).
-
 ## Giới hạn đã biết
 
 - **Ảnh web, ít đa dạng:** nhiều ảnh có watermark kho ảnh stock, minh hoạ/icon/render nhìn từ trên xuống;
