@@ -35,10 +35,10 @@ Nguồn, thống kê và các vấn đề đã phát hiện: xem [DATASET.md](DA
 
 ## Huấn luyện
 
-Cấu hình trong `configs/exp*.yaml`: seed 0, `deterministic`, khởi tạo từ COCO. Bốn thí nghiệm so sánh dùng
+Cấu hình model cuối trong `configs/exp3c_yolo11n_v2_640_30ep.yaml` (các config so sánh cũ trong git history): seed 0, `deterministic`, khởi tạo từ COCO. Bốn thí nghiệm so sánh dùng
 15 epoch (patience 8, `close_mosaic` 5, batch 16); model cuối là lượt YOLO11n **30 epoch** (chỉ đổi số epoch,
 vì các lượt 15 epoch đều chưa hội tụ). Phần cứng: RTX 4060 Laptop 8 GB; lượt cuối mất ≈ 15 phút. Mỗi run lưu
-config, phiên bản thư viện và git commit (`vehicledet_run.json`, MLflow). Model được chọn **chỉ dựa trên val**.
+config, phiên bản thư viện và git commit (`vehicledet_run.json`). Model được chọn **chỉ dựa trên val**.
 
 ## Đánh giá
 

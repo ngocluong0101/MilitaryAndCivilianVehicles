@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-from pathlib import Path
 
 from vehicledet.data.splits import write_legacy_split
 from vehicledet.data.yolo_layout import build_yolo_dataset
@@ -59,19 +58,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("train", help="Train từ file config")
     add_data_root(sp)
-    sp.add_argument("--config", required=True, help="vd: configs/exp3b_yolo11s_v2_640.yaml")
+    sp.add_argument("--config", required=True, help="vd: configs/exp3c_yolo11n_v2_640_30ep.yaml")
     sp.add_argument(
         "--override",
         action="append",
         default=[],
         metavar="KEY=VALUE",
         help="Ghi đè tham số train hoặc model/split/name/seed, vd: --override epochs=1",
-    )
-    sp.add_argument("--no-mlflow", action="store_true", help="Không ghi MLflow")
-    sp.add_argument(
-        "--skip-if-done",
-        action="store_true",
-        help="Bỏ qua nếu reports/experiments/<name>/ đã có kết quả",
     )
 
     sp = sub.add_parser("evaluate", help="Đánh giá weights trên một split -> reports/eval/*.json")
@@ -90,15 +83,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="BẮT BUỘC cho --part test: xác nhận đây là lần báo cáo cuối",
     )
     sp.add_argument("--allow-rerun", action="store_true", help="Cho phép ghi đè test_results.json")
-
-    sp = sub.add_parser("analyze-errors", help="Phân tích lỗi trên VAL -> reports/error_analysis/")
-    add_data_root(sp)
-    sp.add_argument("--weights", required=True)
-    sp.add_argument("--split", default="v2")
-    sp.add_argument("--conf", type=float, default=0.25, help="Ngưỡng điểm khi phân tích lỗi")
-    sp.add_argument("--imgsz", type=int, default=640)
-    sp.add_argument("--device", default=None)
-    sp.add_argument("--out", default=None, help="Thư mục xuất (mặc định reports/error_analysis)")
     return p
 
 
@@ -165,8 +149,6 @@ def main(argv: list[str] | None = None) -> int:
                 args.config,
                 args.data_root,
                 args.override,
-                use_mlflow=not args.no_mlflow,
-                skip_if_done=args.skip_if_done,
             )
         )
     elif args.command == "evaluate":
@@ -187,12 +169,4 @@ def main(argv: list[str] | None = None) -> int:
                 args.allow_rerun,
             )
         )
-    elif args.command == "analyze-errors":
-        from vehicledet.error_analysis import run_error_analysis
-
-        kwargs = {"out_dir": Path(args.out)} if args.out else {}
-        summary = run_error_analysis(
-            args.weights, args.split, args.conf, args.imgsz, args.device, args.data_root, **kwargs
-        )
-        print(json.dumps(summary["counts"], ensure_ascii=False, indent=1))
     return 0

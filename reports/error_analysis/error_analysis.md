@@ -72,55 +72,46 @@ Số ca: **12** (dự đoán điểm ≥ 0.7 không có nhãn, hoặc ≥ 0.8 nh
 
 ### Nhầm lớp
 
-![class_confusion](class_confusion.jpg)
 
 Ảnh: `boeing-787-800x415.jpg`, `images308(10).jpg`, `images51(6).jpg`, `images318(2).jpg`, `images240.jpg`, `images232(5).jpg`
 
 ### Bỏ sót: vật thể nhỏ
 
-![miss_small](miss_small.jpg)
 
 Ảnh: `images136(3).jpg`, `images195(6).jpg`, `images290(10).jpg`, `images288(4).jpg`, `airplanes-aircrafts-helicopters-set-air-260nw-1503096545.jpg`, `images79(4).jpg`
 
 ### Bỏ sót: bị che/chồng
 
-![miss_occluded](miss_occluded.jpg)
 
 Ảnh: `LaFontaine-Global-Vehicles-Home-Image-1200x450_c.jpg`, `m1a2-abrams-battle-tank-01.jpg`, `india-arunachal-pradesh-tenga-cantonment-army-recovery-truck-recovering-CC74CB.jpg`, `gbp-jp-2016769.jpg`, `images607.jpg`, `images247(8).jpg`
 
 ### Bỏ sót: ảnh nhiều vật thể
 
-![miss_crowded](miss_crowded.jpg)
 
 Ảnh: `images45(8).jpg`, `india-arunachal-pradesh-tenga-cantonment-army-recovery-truck-recovering-CC74CB.jpg`, `images58(9).jpg`, `Cold-War-poster-equipment-Soviet-army.jpg`, `gbp-jp-2016769.jpg`, `1200px-ALCOB_Ashok_Leyland_Corporate_Building_in_Guindy2C_Chennai.jpg`
 
 ### Bỏ sót: không thuộc nhóm trên
 
-![miss_other](miss_other.jpg)
 
 Ảnh: `1(2).jpg`, `Vehicles_850x460_acf_cropped.jpg`, `images10(7).jpg`, `images48(5).jpg`, `BG-Museums-1200x343.jpg`, `Types-of-Vehicle..jpg`
 
 ### Phát hiện thừa (nền)
 
-![background_fp](background_fp.jpg)
 
 Ảnh: `id_ltt-hmt_trailer_m1101_04_700.jpg`, `images292(9).jpg`, `taxi-police-cars-top-view-vector-set-auto-car-icon-illustration-vector-illustration-flat-design-top-view-police-taxi-image.jpg`, `images318(7).jpg`, `aletta-wenas-helispread2-2forportfoliobox.jpg`, `Cold-War-poster-equipment-Soviet-army.jpg`
 
 ### Dự đoán trùng lặp
 
-![duplicate](duplicate.jpg)
 
 Ảnh: `images263(1).jpg`, `Airbus-Commercial-Aircraft-formation-flight-3.jpg`, `images100(5).jpg`, `images242(1).jpg`, `images304(1).jpg`, `images239(8).jpg`
 
 ### Định vị sai (đúng lớp, IoU 0,1–0,5)
 
-![localization](localization.jpg)
 
 Ảnh: `images360(8).jpg`, `images347(9).jpg`, `gbp-jp-2016769.jpg`, `images245(7).jpg`, `2014chilec130aircraft-1575947699.jpg`, `images21(4).jpg`
 
 ### Nhãn đáng ngờ (dự đoán điểm cao không khớp nhãn)
 
-![suspect_label](suspect_label.jpg)
 
 Ảnh: `boeing-787-800x415.jpg`, `images308(10).jpg`, `id_ltt-hmt_trailer_m1101_04_700.jpg`, `images51(6).jpg`, `images318(2).jpg`, `images292(9).jpg`
 

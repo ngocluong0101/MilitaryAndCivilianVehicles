@@ -25,13 +25,13 @@ env/
 /data/
 /train_data/
 
-# Kết quả train, MLflow, weights, model đã export
+# Kết quả train, weights (mlruns/, mlflow.db, exports/ là file cũ còn trên đĩa)
 /runs/
 /mlruns/
 mlflow.db
+/exports/
 /logs/
 /weights/
-/exports/
 *.pt
 *.onnx
 *.engine

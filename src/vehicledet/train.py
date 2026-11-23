@@ -6,8 +6,10 @@ Train bằng Ultralytics từ file config YAML (configs/train_*.yaml).
 
 from __future__ import annotations
 
+import csv
 import json
 import logging
+import shutil
 import time
 from pathlib import Path
 
@@ -15,8 +17,8 @@ import yaml
 
 from vehicledet.data.yolo_layout import build_yolo_dataset
 from vehicledet.env_info import env_info
+from vehicledet.evaluate import evaluate, write_result
 from vehicledet.paths import EXPERIMENTS_DIR, REPO_ROOT, WEIGHTS_DIR, portable, resolve_data_root
-from vehicledet.tracking import Tracker
 
 log = logging.getLogger(__name__)
 
@@ -68,54 +70,56 @@ def build_train_args(cfg: dict, data_yaml: Path) -> dict:
     }
 
 
-def _drop_builtin_mlflow(trainer) -> None:
-    """Gỡ callback MLflow tích hợp của Ultralytics (ta dùng Tracker riêng), chỉ trong run này."""
-    from ultralytics.utils.callbacks import mlflow as ul_mlflow
+def best_epoch_from_results(results_csv: Path) -> tuple[int, int]:
+    """(epoch tốt nhất, số epoch đã chạy) từ results.csv; fitness = 0.1*mAP50 + 0.9*mAP50-95."""
+    with open(results_csv, newline="", encoding="utf-8") as f:
+        rows = [{k.strip(): v for k, v in r.items()} for r in csv.DictReader(f)]
+    fitness = [
+        0.1 * float(r["metrics/mAP50(B)"]) + 0.9 * float(r["metrics/mAP50-95(B)"]) for r in rows
+    ]
+    best = max(range(len(rows)), key=fitness.__getitem__)
+    return int(float(rows[best]["epoch"])), len(rows)
 
-    for event, fn in ul_mlflow.callbacks.items():
-        if fn in trainer.callbacks.get(event, []):
-            trainer.callbacks[event].remove(fn)
+
+def write_experiment_report(
+    name: str,
+    run_info: dict,
+    val_result: dict,
+    results_csv: Path,
+    confusion_png: Path,
+    root: Path = EXPERIMENTS_DIR,
+) -> Path:
+    """Ghi val.json, results.csv, confusion_matrix_val.png, run_info.json vào <root>/<name>/."""
+    d = root / name
+    d.mkdir(parents=True, exist_ok=True)
+    write_result(val_result, d / "val.json")
+    if results_csv.exists():
+        shutil.copy(results_csv, d / "results.csv")
+    if confusion_png.exists():
+        shutil.copy(confusion_png, d / "confusion_matrix_val.png")
+    (d / "run_info.json").write_text(
+        json.dumps(run_info, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    return d
 
 
 def run_train(
     config_path: str | Path,
     data_root: str | None = None,
     overrides=(),
-    use_mlflow: bool = True,
-    skip_if_done: bool = False,
     experiments_dir: Path = EXPERIMENTS_DIR,
-) -> Path | None:
+) -> Path:
     from ultralytics import YOLO  # import trễ: chỉ cần khi thật sự train
-
-    from vehicledet.evaluate import evaluate
-    from vehicledet.experiments import (
-        best_epoch_from_results,
-        run_info_path,
-        write_experiment_report,
-    )
 
     cfg = apply_overrides(load_config(config_path), list(overrides))
     name = cfg["name"]
-    if skip_if_done and run_info_path(name, experiments_dir).exists():
-        log.info("Bỏ qua '%s': đã có kết quả ở %s", name, run_info_path(name, experiments_dir))
-        return None
 
     dataset = build_yolo_dataset(resolve_data_root(data_root), cfg["split"])
     log.info("Dataset '%s': %s", cfg["split"], dataset.counts)
     args = build_train_args(cfg, dataset.data_yaml)
     env = env_info()
 
-    tracker = Tracker(use_mlflow)
-    tracker.start(
-        run_name=name,
-        params={"config": cfg, "dataset_counts": dataset.counts, "env": env},
-        tags={"split": cfg["split"], "model": cfg["model"], "git_commit": str(env["git_commit"])},
-    )
-
     model = YOLO(resolve_model(cfg["model"]))
-    model.add_callback("on_pretrain_routine_start", _drop_builtin_mlflow)
-    if tracker.enabled:
-        model.add_callback("on_fit_epoch_end", tracker.epoch_callback())
 
     def save_run_info(trainer) -> None:
         info = {"config": cfg, "train_args": args, "dataset_counts": dataset.counts, "env": env}
@@ -126,11 +130,7 @@ def run_train(
     model.add_callback("on_pretrain_routine_end", save_run_info)
 
     start = time.time()
-    try:
-        model.train(**args)
-    except BaseException:
-        tracker.end("FAILED")
-        raise
+    model.train(**args)
     train_minutes = (time.time() - start) / 60
     save_dir = Path(model.trainer.save_dir)
 
@@ -161,7 +161,6 @@ def run_train(
             "best_epoch": best_epoch,
             "early_stopped": epochs_ran < args.get("epochs", epochs_ran),
             "weights": str(best),
-            "mlflow_run_id": tracker.run_id,
         }
     )
     report_dir = write_experiment_report(
@@ -173,26 +172,5 @@ def run_train(
         experiments_dir,
     )
 
-    final = {
-        "val_mAP50": val_result["mAP50"],
-        "val_mAP50-95": val_result["mAP50-95"],
-        "val_precision": val_result["precision"],
-        "val_recall": val_result["recall"],
-        "train_minutes": train_minutes,
-        "best_epoch": best_epoch,
-    }
-    for cls, v in val_result["per_class"].items():
-        key = cls.replace(" ", "_")
-        final[f"val_AP50_{key}"], final[f"val_AP50-95_{key}"] = v["AP50"], v["AP50-95"]
-    tracker.log_metrics(final)
-    tracker.log_artifacts(
-        [
-            *report_dir.iterdir(),
-            *save_dir.glob("*.png"),
-            save_dir / "args.yaml",
-            save_dir / "vehicledet_run.json",
-        ]
-    )
-    tracker.end("FINISHED")
     log.info("Xong sau %.1f phút. Kết quả: %s ; báo cáo: %s", train_minutes, save_dir, report_dir)
     return save_dir

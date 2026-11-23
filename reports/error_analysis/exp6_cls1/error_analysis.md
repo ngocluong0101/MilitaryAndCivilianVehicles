@@ -67,55 +67,46 @@ Số ca: **7** (dự đoán điểm ≥ 0.7 không có nhãn, hoặc ≥ 0.8 nh�
 
 ### Nhầm lớp
 
-![class_confusion](class_confusion.jpg)
 
 Ảnh: `boeing-787-800x415.jpg`, `landscape-1488485223-gigahorse.jpg`, `clouds-minimalism-the-plane-fighter-wallpaper-preview.jpg`, `images294(4).jpg`, `images51(6).jpg`, `images174(11).jpg`
 
 ### Bỏ sót: vật thể nhỏ
 
-![miss_small](miss_small.jpg)
 
 Ảnh: `images195(6).jpg`, `images290(10).jpg`, `airplanes-aircrafts-helicopters-set-air-260nw-1503096545.jpg`, `images190(9).jpg`, `images607.jpg`, `images239(8).jpg`
 
 ### Bỏ sót: bị che/chồng
 
-![miss_occluded](miss_occluded.jpg)
 
 Ảnh: `LaFontaine-Global-Vehicles-Home-Image-1200x450_c.jpg`, `images299(1).jpg`, `india-arunachal-pradesh-tenga-cantonment-army-recovery-truck-recovering-CC74CB.jpg`, `gbp-jp-2016769.jpg`, `images239(8).jpg`, `images236(10).jpg`
 
 ### Bỏ sót: ảnh nhiều vật thể
 
-![miss_crowded](miss_crowded.jpg)
 
 Ảnh: `india-arunachal-pradesh-tenga-cantonment-army-recovery-truck-recovering-CC74CB.jpg`, `1200px-ALCOB_Ashok_Leyland_Corporate_Building_in_Guindy2C_Chennai.jpg`, `gbp-jp-2016769.jpg`, `images58(9).jpg`, `images36(8).jpg`, `images45(8).jpg`
 
 ### Bỏ sót: không thuộc nhóm trên
 
-![miss_other](miss_other.jpg)
 
 Ảnh: `images255(10).jpg`, `images300(6).jpg`, `images10(7).jpg`, `images131(4).jpg`, `images251(5).jpg`, `image(5).jpg`
 
 ### Phát hiện thừa (nền)
 
-![background_fp](background_fp.jpg)
 
 Ảnh: `images292(9).jpg`, `taxi-police-cars-top-view-vector-set-auto-car-icon-illustration-vector-illustration-flat-design-top-view-police-taxi-image.jpg`, `id_ltt-hmt_trailer_m1101_04_700.jpg`, `bus-ferry-water-taxi-car-top-view.jpg`, `images261(2).jpg`, `images300.jpg`
 
 ### Dự đoán trùng lặp
 
-![duplicate](duplicate.jpg)
 
 Ảnh: `0f0c81a7303883289bd9d0e9b468b834.jpg`, `images304(1).jpg`, `images230(1).jpg`, `51By3Q12BIDL._SX355_.jpg`, `images208(6).jpg`, `depositphotos_174265582-stock-illustration-blueprint-of-realistic-tank-top.jpg`
 
 ### Định vị sai (đúng lớp, IoU 0,1–0,5)
 
-![localization](localization.jpg)
 
 Ảnh: `images347(9).jpg`, `gbp-jp-2016769.jpg`, `images360(8).jpg`, `images70(11).jpg`, `images405(1).jpg`, `L242028129.jpg`
 
 ### Nhãn đáng ngờ (dự đoán điểm cao không khớp nhãn)
 
-![suspect_label](suspect_label.jpg)
 
 Ảnh: `images292(9).jpg`, `taxi-police-cars-top-view-vector-set-auto-car-icon-illustration-vector-illustration-flat-design-top-view-police-taxi-image.jpg`, `id_ltt-hmt_trailer_m1101_04_700.jpg`, `bus-ferry-water-taxi-car-top-view.jpg`, `images261(2).jpg`, `images300.jpg`
 

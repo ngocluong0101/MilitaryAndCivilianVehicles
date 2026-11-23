@@ -33,8 +33,8 @@ def test_parser_evaluate_and_train_flags():
         ["evaluate", "--weights", "w.pt", "--split", "v2", "--part", "test", "--final"]
     )
     assert (a.part, a.final, a.allow_rerun, a.workers) == ("test", True, False, 4)
-    t = pr.parse_args(["train", "--config", "c.yaml", "--no-mlflow", "--skip-if-done"])
-    assert t.no_mlflow and t.skip_if_done
+    t = pr.parse_args(["train", "--config", "c.yaml", "--override", "epochs=1"])
+    assert t.override == ["epochs=1"]
     with pytest.raises(SystemExit):
         pr.parse_args(["evaluate", "--weights", "w.pt", "--split", "v2", "--part", "other"])
 

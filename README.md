@@ -8,15 +8,15 @@ cho biết đó là loại nào trong 6 loại — `military truck` (xe tải qu
 `military helicopter` (trực thăng quân sự). Xây dựng trên [Ultralytics YOLO](https://github.com/ultralytics/ultralytics).
 
 Project đi qua đủ vòng đời của một model thị giác máy tính: **kiểm tra dữ liệu → chia tập đúng cách →
-huấn luyện có đối chứng → đánh giá → phân tích lỗi**.
+huấn luyện → đánh giá**.
 
 ```mermaid
 flowchart LR
     A[(Dataset<br/>Mendeley)] --> B[audit<br/>kiểm tra nhãn, ảnh]
     B --> C[find-duplicates<br/>tìm ảnh trùng]
     C --> D[make-split<br/>chia train/val/test]
-    D --> E[train<br/>YOLO + MLflow]
-    E --> F[evaluate &<br/>analyze-errors]
+    D --> E[train<br/>YOLO]
+    E --> F[evaluate]
 ```
 
 ## Điểm nổi bật
@@ -24,7 +24,7 @@ flowchart LR
 | Khía cạnh | Vấn đề thường gặp | Dự án này làm gì | Kết quả |
 |---|---|---|---|
 | **Dữ liệu** | Ảnh giống nhau nằm ở cả tập huấn luyện và tập kiểm tra khiến điểm số cao ảo | Dò ảnh trùng bằng perceptual hash, chia lại dữ liệu theo từng nhóm ảnh trùng | **71,7%** ảnh có bản trùng; **64,9%** ảnh kiểm tra của cách chia gốc có bản sao trong tập huấn luyện; sau khi chia lại: 0 nhóm bị tách |
-| **Đánh giá** | Chọn model trên tập test làm số cuối bị lạc quan | Khoá tập test trong code (chỉ chạy một lần); mỗi thí nghiệm chỉ đổi một yếu tố, lưu bằng MLflow | mAP50-95 **0,531** trên 679 ảnh test độc lập |
+| **Đánh giá** | Chọn model trên tập test làm số cuối bị lạc quan | Khoá tập test trong code (chỉ chạy một lần); mỗi thí nghiệm chỉ đổi một yếu tố, kết quả lưu trong `reports/experiments/` | mAP50-95 **0,531** trên 679 ảnh test độc lập |
 | **Kiểm thử** | Mã khó tái lập, dễ hỏng âm thầm | Kiểm thử tự động chạy trên CPU với dữ liệu giả, CI chạy mỗi lần push | Xem mục [Kiểm thử](#kiểm-thử) |
 | **Trung thực** | Chỉ công bố kết quả đẹp | Ghi lại cả thí nghiệm không cải thiện và các lỗi đo đạc đã sửa | Toàn bộ trong [reports/](reports/) |
 
@@ -56,13 +56,13 @@ flowchart LR
 | exp3b | YOLO11s, 15 epoch | 0,465 |
 | **exp3c** | **YOLO11n, 30 epoch** (model được chọn) | **0,480** |
 
-Nguồn: `reports/experiments_summary.md` và `reports/experiments/`.
+Nguồn: `reports/experiments_summary.md` và `reports/experiments/` (kết quả đã đo, lưu tĩnh).
 
 ### Phân tích lỗi
 
 Lỗi model hay gặp nhất là nhầm máy bay dân dụng thành máy bay quân sự (28 trên tổng 76 ca nhầm lớp), nhiều ca
 vốn mơ hồ ngay cả với người xem. Nhiều trường hợp "phát hiện thừa" thực chất là vật thể thật mà dataset
-chưa gán nhãn. Báo cáo kèm ảnh minh hoạ: [reports/error_analysis/error_analysis.md](reports/error_analysis/error_analysis.md).
+chưa gán nhãn. Số liệu đo bằng công cụ đã gỡ khỏi repo (còn trong git history): [reports/error_analysis/error_analysis.md](reports/error_analysis/error_analysis.md).
 
 ## Bắt đầu nhanh
 
@@ -94,11 +94,10 @@ python -m vehicledet make-split              # chia train/val/test          -> s
 ```bash
 python -m vehicledet train --config configs/exp3c_yolo11n_v2_640_30ep.yaml   # ~15 phút trên RTX 4060 Laptop
 python -m vehicledet evaluate --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt --split v2 --part val
-python -m vehicledet analyze-errors --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt
 ```
 
-Mỗi lần huấn luyện được lưu vào `runs/` và MLflow (`mlflow ui --backend-store-uri sqlite:///mlflow.db`), kèm
-báo cáo gọn trong `reports/experiments/`. Các cấu hình thí nghiệm khác nằm ở `configs/`.
+Mỗi lần huấn luyện được lưu vào `runs/`, kèm báo cáo gọn trong `reports/experiments/<tên>/`. Config chỉ còn
+model cuối (`exp3c`); các config thí nghiệm so sánh cũ (exp1–exp6) nằm trong git history.
 
 Tập test chỉ dùng được một lần, sau khi đã chọn xong model:
 
@@ -110,7 +109,7 @@ python -m vehicledet evaluate --weights <đường dẫn best.pt> --split v2 --p
 
 ```
 configs/        cấu hình từng thí nghiệm (YAML) và tên 6 lớp
-src/vehicledet/ mã nguồn: data/ (kiểm tra, chia tập), train, evaluate, error_analysis
+src/vehicledet/ mã nguồn: data/ (kiểm tra, chia tập), train, evaluate
 splits/         danh sách ảnh của từng tập train/val/test
 scripts/        cài môi trường, chạy hàng loạt thí nghiệm, tổng hợp kết quả
 tests/          79 bài kiểm thử (dùng dữ liệu giả, không cần GPU hay dataset)

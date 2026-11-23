@@ -46,11 +46,3 @@ Sinh bởi `python -m vehicledet find-duplicates` (danh sách nhóm đầy đủ
 
 ## Ví dụ (chữ đỏ = tập theo cách chia cũ, nếu có)
 
-![group_00_n5.jpg](duplicates/group_00_n5.jpg)
-![group_01_n5.jpg](duplicates/group_01_n5.jpg)
-![group_02_n2.jpg](duplicates/group_02_n2.jpg)
-![group_03_n2.jpg](duplicates/group_03_n2.jpg)
-![group_04_n2.jpg](duplicates/group_04_n2.jpg)
-![group_05_n2.jpg](duplicates/group_05_n2.jpg)
-![group_06_n2.jpg](duplicates/group_06_n2.jpg)
-![group_07_n3.jpg](duplicates/group_07_n3.jpg)
