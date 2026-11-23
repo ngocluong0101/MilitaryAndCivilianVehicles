@@ -1,3 +1,7 @@
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+"""
+
 import csv
 import json
 from types import SimpleNamespace

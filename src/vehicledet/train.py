@@ -1,4 +1,8 @@
-"""Train bằng Ultralytics từ file config YAML (configs/train_*.yaml)."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Train bằng Ultralytics từ file config YAML (configs/train_*.yaml).
+"""
 
 from __future__ import annotations
 
@@ -33,8 +37,7 @@ def load_config(path: str | Path) -> dict:
 
 
 def apply_overrides(cfg: dict, overrides: list[str]) -> dict:
-    """Ghi đè bằng 'key=value' (value parse theo YAML). Khoá model/split/name/seed/project ghi vào
-    cấp ngoài cùng, các khoá còn lại là tham số train của Ultralytics."""
+    """Ghi đè bằng 'key=value' (YAML); model/split/name/seed/project nằm ở cấp ngoài."""
     for item in overrides:
         key, sep, value = item.partition("=")
         if not sep:
@@ -66,10 +69,7 @@ def build_train_args(cfg: dict, data_yaml: Path) -> dict:
 
 
 def _drop_builtin_mlflow(trainer) -> None:
-    """Gỡ callback MLflow tích hợp sẵn của Ultralytics (nó log cả weights và đặt tên experiment
-    theo đường dẫn); ta dùng Tracker riêng. Callback này được Ultralytics thêm lúc khởi tạo trainer,
-    nên phải gỡ ở sự kiện đầu tiên của trainer (on_pretrain_routine_start). Chỉ ảnh hưởng run này,
-    không đổi cấu hình toàn cục của Ultralytics."""
+    """Gỡ callback MLflow tích hợp của Ultralytics (ta dùng Tracker riêng), chỉ trong run này."""
     from ultralytics.utils.callbacks import mlflow as ul_mlflow
 
     for event, fn in ul_mlflow.callbacks.items():

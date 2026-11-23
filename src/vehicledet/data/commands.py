@@ -1,4 +1,8 @@
-"""Các lệnh dữ liệu cấp cao: audit, find-duplicates, make-split (được gọi từ CLI)."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Các lệnh dữ liệu cấp cao: audit, find-duplicates, make-split (được gọi từ CLI).
+"""
 
 from __future__ import annotations
 

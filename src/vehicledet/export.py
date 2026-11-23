@@ -1,8 +1,10 @@
-"""Export model đã train sang ONNX và TensorRT (FP16, INT8).
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
 
-INT8 cần ảnh hiệu chuẩn: lấy ngẫu nhiên (seed cố định) ~500 ảnh từ tập **train** — không dùng val
-hay test. Ultralytics đọc ảnh hiệu chuẩn từ khoá `val` của data.yaml, nên ta sinh một data.yaml
-riêng trỏ `val` tới danh sách ảnh train đó.
+Export model đã train sang ONNX và TensorRT (FP16, INT8).
+
+INT8 hiệu chuẩn bằng ~500 ảnh **train** ngẫu nhiên (seed cố định), không dùng val/test. Ultralytics
+đọc ảnh hiệu chuẩn từ khoá `val`, nên sinh một data.yaml riêng trỏ `val` tới danh sách đó.
 """
 
 from __future__ import annotations
@@ -81,10 +83,9 @@ def export_formats(
     device: str = "0",
     out_root: Path = EXPORTS_DIR,
 ) -> dict:
-    """Export vào exports/<tag>/ : best.onnx, best_fp16.engine, best_int8.engine.
+    """Export vào exports/<tag>/: best.onnx, best_fp16.engine, best_int8.engine.
 
-    Định dạng nào không export được (vd chưa cài TensorRT) được ghi lại với lý do thay vì làm
-    hỏng cả lệnh. Trả về dict kết quả (cũng ghi ở exports/<tag>/export_info.json).
+    Định dạng không export được thì ghi lý do (export_info.json) thay vì làm hỏng cả lệnh.
     """
     from ultralytics import YOLO
 

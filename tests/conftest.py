@@ -1,3 +1,7 @@
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+"""
+
 import pytest
 
 CSV_HEADER = "filename,width,height,class,xmin,ymin,xmax,ymax\n"
@@ -11,11 +15,8 @@ def _row(name: str) -> str:
 def fake_dataset(tmp_path):
     """Dataset giả theo cấu trúc Mendeley.
 
-    Ảnh a..f.jpg trên đĩa (+ g.jpg chỉ có trong CSV, không có file).
-    train_labels.csv = a,b,c,d,g + val e? -> xem bên dưới:
-      - test_labels.csv  : d, e
-      - train_labels.csv : a, b, c, d (lặp với test), g (thiếu file)
-    f.jpg không có trong CSV nào. c không có file nhãn TXT.
+    Ảnh a..f.jpg trên đĩa. test_labels.csv: d, e. train_labels.csv: a, b, c, d (lặp với test),
+    g (thiếu file). f không có trong CSV nào; c không có file nhãn TXT.
     """
     root = tmp_path / "dataset with spaces"
     images = root / "Images"

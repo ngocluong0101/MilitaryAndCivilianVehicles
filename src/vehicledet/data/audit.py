@@ -1,4 +1,8 @@
-"""Audit chất lượng dữ liệu: thống kê, nhãn hỏng, ảnh hỏng, CSV vs TXT."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Audit chất lượng dữ liệu: thống kê, nhãn hỏng, ảnh hỏng, CSV vs TXT.
+"""
 
 from __future__ import annotations
 

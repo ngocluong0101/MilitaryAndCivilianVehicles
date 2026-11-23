@@ -1,4 +1,8 @@
-"""Đường dẫn của project; dataset nằm ngoài code, trỏ bằng DATA_ROOT."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Đường dẫn của project; dataset nằm ngoài code, trỏ bằng DATA_ROOT.
+"""
 
 from __future__ import annotations
 
@@ -30,10 +34,7 @@ def class_names() -> list[str]:
 
 
 def resolve_data_root(arg: str | os.PathLike | None = None) -> Path:
-    """Thứ tự ưu tiên: tham số > biến môi trường DATA_ROOT > <repo>/data.
-
-    Kiểm tra thư mục ảnh tồn tại để lỗi sớm và dễ hiểu.
-    """
+    """Ưu tiên: tham số > biến môi trường DATA_ROOT > <repo>/data; lỗi sớm nếu thiếu thư mục ảnh."""
     value = arg or os.environ.get("DATA_ROOT") or REPO_ROOT / "data"
     root = Path(value).expanduser().resolve()
     images = root / load_data_config()["images_dir"]
@@ -58,8 +59,7 @@ def csv_labels_dir(data_root: Path) -> Path:
 
 
 def portable(value):
-    """Thay đường dẫn tuyệt đối trong chuỗi/dict/list bằng <repo> hoặc ~ để file báo cáo (được
-    commit) không lộ tên người dùng/thư mục máy."""
+    """Thay đường dẫn tuyệt đối bằng <repo> hoặc ~ để báo cáo không lộ tên người dùng/máy."""
     if isinstance(value, str):
         return value.replace(str(REPO_ROOT), "<repo>").replace(str(Path.home()), "~")
     if isinstance(value, dict):

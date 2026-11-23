@@ -1,11 +1,13 @@
-"""Dựng cấu trúc thư mục kiểu YOLO bằng symlink từ danh sách split (không copy ảnh).
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
 
-Ultralytics tìm nhãn bằng cách thay '/images/' thành '/labels/' trong đường dẫn ảnh, còn dataset
-gốc dùng 'Images/' và 'Labels/TXT format/'. Vì vậy ta sinh:
+Dựng thư mục kiểu YOLO bằng symlink từ danh sách split (không copy ảnh).
 
-    <DATA_ROOT>/yolo/<split>/images/<train|val|test>/<file>  -> symlink tới Images/<file>
-    <DATA_ROOT>/yolo/<split>/labels/<train|val|test>/<stem>.txt -> symlink tới nhãn TXT
-    <DATA_ROOT>/yolo/<split>/data.yaml                          (đường dẫn tuyệt đối)
+Ultralytics tìm nhãn bằng cách đổi '/images/' thành '/labels/' trong đường dẫn ảnh, nên sinh:
+
+    <DATA_ROOT>/yolo/<split>/images/<train|val|test>/<file>      -> Images/<file>
+    <DATA_ROOT>/yolo/<split>/labels/<train|val|test>/<stem>.txt  -> nhãn TXT
+    <DATA_ROOT>/yolo/<split>/data.yaml                           (đường dẫn tuyệt đối)
 """
 
 from __future__ import annotations

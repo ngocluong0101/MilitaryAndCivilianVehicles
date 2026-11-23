@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# Chạy tuần tự các thí nghiệm train (4 lượt × ~15–20 phút, có nghỉ giữa các lượt). Mỗi thí nghiệm đã có kết quả sẽ được bỏ qua.
-#   bash scripts/run_experiments.sh                 # exp1, exp2, exp3a, exp3b
-#   bash scripts/run_experiments.sh configs/exp4_yolo11s_v2_960.yaml   # chỉ chạy config chỉ định
-# Laptop: giữa hai lượt có nghỉ COOLDOWN_SECONDS giây (mặc định 300) để máy nguội; đặt 0 để tắt.
-#   COOLDOWN_SECONDS=600 bash scripts/run_experiments.sh
-# Có thể bấm Ctrl+C bất cứ lúc nào: lượt đã xong được giữ, chạy lại sẽ bỏ qua chúng.
-# Log: logs/<tên>.log ; kết quả: reports/experiments/<tên>/ ; MLflow: `mlflow ui --backend-store-uri sqlite:///mlflow.db`
+# @author: Ngoc Luong <ngocluongg0101@gmail.com>
+# Chạy tuần tự các thí nghiệm train; thí nghiệm đã có kết quả sẽ được bỏ qua.
+#   bash scripts/run_experiments.sh                                    # exp1, exp2, exp3a, exp3b
+#   bash scripts/run_experiments.sh configs/exp4_yolo11s_v2_960.yaml   # chỉ config chỉ định
+# COOLDOWN_SECONDS (mặc định 300): nghỉ giữa hai lượt cho laptop nguội; đặt 0 để tắt.
+# Log: logs/<tên>.log ; kết quả: reports/experiments/<tên>/
 set -u
 cd "$(dirname "$0")/.."
 export DATA_ROOT="${DATA_ROOT:-$PWD/data}"

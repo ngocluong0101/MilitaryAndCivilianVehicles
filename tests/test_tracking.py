@@ -1,3 +1,7 @@
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+"""
+
 from vehicledet import tracking
 from vehicledet.paths import REPO_ROOT, portable
 from vehicledet.train import apply_overrides

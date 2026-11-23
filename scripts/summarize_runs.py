@@ -1,4 +1,7 @@
-"""Tổng hợp reports/experiments/*/ thành bảng so sánh (md + csv) và cập nhật ROADMAP.md.
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Tổng hợp reports/experiments/*/ thành bảng so sánh (md + csv) và cập nhật ROADMAP.md.
 
 Dùng: python scripts/summarize_runs.py [--roadmap ROADMAP.md]
 """
@@ -17,7 +20,9 @@ from vehicledet.paths import REPORTS_DIR
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(
+        description="Tổng hợp reports/experiments/*/ thành bảng so sánh (md + csv)"
+    )
     ap.add_argument("--roadmap", type=Path, help="Cập nhật khối bảng trong file này")
     args = ap.parse_args()
 

@@ -1,4 +1,8 @@
-"""MLflow local (sqlite + thư mục mlruns/): log tham số, metric từng epoch, artifact nhỏ."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+MLflow local (sqlite + thư mục mlruns/): log tham số, metric từng epoch, artifact nhỏ.
+"""
 
 from __future__ import annotations
 

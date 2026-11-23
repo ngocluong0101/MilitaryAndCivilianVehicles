@@ -1,4 +1,8 @@
-"""Lưu kết quả mỗi thí nghiệm vào reports/experiments/<tên>/ và tổng hợp thành bảng so sánh."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Lưu kết quả mỗi thí nghiệm vào reports/experiments/<tên>/ và tổng hợp thành bảng so sánh.
+"""
 
 from __future__ import annotations
 
@@ -19,10 +23,7 @@ def run_info_path(name: str, root: Path = EXPERIMENTS_DIR) -> Path:
 
 
 def best_epoch_from_results(results_csv: Path) -> tuple[int, int]:
-    """(epoch tốt nhất, số epoch đã chạy) từ results.csv của Ultralytics.
-
-    Epoch tốt nhất theo fitness của Ultralytics = 0.1*mAP50 + 0.9*mAP50-95 (đánh giá trên val).
-    """
+    """(epoch tốt nhất, số epoch đã chạy) từ results.csv; fitness = 0.1*mAP50 + 0.9*mAP50-95."""
     with open(results_csv, newline="", encoding="utf-8") as f:
         rows = [{k.strip(): v for k, v in r.items()} for r in csv.DictReader(f)]
     fitness = [

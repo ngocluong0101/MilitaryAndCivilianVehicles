@@ -1,4 +1,8 @@
-"""CLI thống nhất: python -m vehicledet <lệnh> ..."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+CLI thống nhất: python -m vehicledet <lệnh> ...
+"""
 
 from __future__ import annotations
 
@@ -13,7 +17,9 @@ from vehicledet.paths import resolve_data_root
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="vehicledet", description=__doc__)
+    p = argparse.ArgumentParser(
+        prog="vehicledet", description="CLI thống nhất: python -m vehicledet <lệnh> ..."
+    )
     sub = p.add_subparsers(dest="command", required=True)
 
     def add_data_root(sp: argparse.ArgumentParser) -> None:

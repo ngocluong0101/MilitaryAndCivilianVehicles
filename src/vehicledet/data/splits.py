@@ -1,4 +1,8 @@
-"""Danh sách chia tập (splits/<tên>/{train,val,test}.txt, mỗi dòng một tên file ảnh)."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Danh sách chia tập (splits/<tên>/{train,val,test}.txt, mỗi dòng một tên file ảnh).
+"""
 
 from __future__ import annotations
 
@@ -41,11 +45,7 @@ class LegacySplit:
 
 
 def legacy_split(data_root: Path) -> LegacySplit:
-    """Tái tạo cách chia cũ: val = test_labels.csv; train = train_labels.csv trừ val.
-
-    Chỉ giữ ảnh thực sự có trên đĩa. Chia theo tên file, chưa xét ảnh trùng nội dung
-    (việc đó thuộc Phase 2).
-    """
+    """Cách chia cũ: val = test_labels.csv; train = train_labels.csv trừ val (ảnh có trên đĩa)."""
     csv_dir = csv_labels_dir(data_root)
     train_all = read_csv_filenames(csv_dir / "train_labels.csv")
     val_all = read_csv_filenames(csv_dir / "test_labels.csv")

@@ -1,15 +1,17 @@
-"""Phân tích lỗi phát hiện trên tập VAL: nhầm lớp, bỏ sót, phát hiện thừa, định vị sai, nhãn đáng ngờ.
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
 
-Quy tắc ghép (theo thứ tự điểm giảm dần, ngưỡng IoU 0,5):
-- đúng lớp + IoU >= 0,5 với GT chưa được ghép            -> tp
-- IoU >= 0,5 với GT cùng lớp đã được ghép                -> duplicate (dự đoán trùng)
-- IoU >= 0,5 với GT khác lớp                             -> class_confusion (nhầm lớp)
-- chỉ có GT cùng lớp với 0,1 <= IoU < 0,5                -> localization (định vị sai)
+Phân tích lỗi phát hiện trên tập VAL: nhầm lớp, bỏ sót, phát hiện thừa, định vị sai, nhãn đáng ngờ.
+
+Ghép theo điểm giảm dần, ngưỡng IoU 0,5:
+- đúng lớp + IoU >= 0,5 với GT chưa ghép                 -> tp
+- IoU >= 0,5 với GT cùng lớp đã ghép                     -> duplicate
+- IoU >= 0,5 với GT khác lớp                             -> class_confusion
+- chỉ có GT cùng lớp với 0,1 <= IoU < 0,5                -> localization
 - chỉ có GT khác lớp với 0,1 <= IoU < 0,5                -> other_fp
-- không chạm GT nào (IoU < 0,1)                          -> background_fp (phát hiện thừa)
-GT không được ghép và không được giải thích bởi nhầm lớp/định vị -> miss (bỏ sót), kèm thẻ: small
-(COCO), occluded (bị GT khác che > 30% diện tích), crowded (ảnh có >= 6 vật thể).
-Không sửa nhãn: dự đoán điểm cao không khớp GT chỉ được ghi vào danh sách "nhãn đáng ngờ".
+- IoU < 0,1 với mọi GT                                   -> background_fp
+GT không được ghép/giải thích là miss, kèm thẻ small (COCO), occluded (bị che > 30%), crowded
+(>= 6 vật thể). Không sửa nhãn: chỉ ghi dự đoán điểm cao không khớp vào danh sách "nhãn đáng ngờ".
 """
 
 from __future__ import annotations

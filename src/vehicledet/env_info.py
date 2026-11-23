@@ -1,4 +1,8 @@
-"""Ghi lại phiên bản thư viện/phần cứng để tái lập kết quả."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Ghi lại phiên bản thư viện/phần cứng để tái lập kết quả.
+"""
 
 from __future__ import annotations
 

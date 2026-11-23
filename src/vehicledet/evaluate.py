@@ -1,4 +1,7 @@
-"""Đánh giá một weights trên một split bất kỳ; xuất json + csv.
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Đánh giá một weights trên một split bất kỳ; xuất json + csv.
 
 Tập test chỉ dùng được với --final và chỉ ghi vào reports/test_results.json (một lần).
 """

@@ -1,7 +1,9 @@
-"""Lõi inference của demo: ONNX Runtime (mặc định, chạy cả CPU) hoặc TensorRT.
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
 
-Backend ONNX tự làm tiền/hậu xử lý bằng numpy/Pillow (letterbox → model → lọc ngưỡng → NMS theo lớp
-→ đưa toạ độ về ảnh gốc) để không cần torch/ultralytics khi triển khai.
+Lõi inference của demo: ONNX Runtime (mặc định, chạy cả CPU) hoặc TensorRT.
+
+Backend ONNX tự tiền/hậu xử lý bằng numpy/Pillow nên không cần torch/ultralytics.
 """
 
 from __future__ import annotations

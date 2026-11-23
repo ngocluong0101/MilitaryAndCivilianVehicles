@@ -1,4 +1,8 @@
-"""Tiện ích dựng model ONNX giả và detector stub cho test phục vụ model."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Tiện ích dựng model ONNX giả và detector stub cho test phục vụ model.
+"""
 
 import numpy as np
 import onnx
@@ -17,12 +21,10 @@ NAMES = {
 
 
 def fake_output() -> np.ndarray:
-    """Đầu ra YOLO giả (1, 4+6, 4), box tính trong không gian letterbox 640x640.
+    """Đầu ra YOLO giả (1, 4+6, 4), box trong không gian letterbox 640x640.
 
-    a0: tank   (320,320,100,100) điểm 0.9
-    a1: tank   (322,322,100,100) điểm 0.8  -> bị NMS triệt tiêu bởi a0
-    a2: truck  (100,100,40,40)   điểm 0.1  -> bị lọc nếu conf > 0.1
-    a3: car    (320,320,100,100) điểm 0.7  -> khác lớp nên KHÔNG bị a0 triệt tiêu
+    a0 tank 0.9; a1 tank 0.8 (bị NMS triệt tiêu bởi a0); a2 truck 0.1 (bị lọc nếu conf > 0.1);
+    a3 car 0.7 (khác lớp nên được giữ).
     """
     out = np.zeros((1, 10, 4), dtype=np.float32)
     boxes = [(320, 320, 100, 100), (322, 322, 100, 100), (100, 100, 40, 40), (320, 320, 100, 100)]

@@ -1,3 +1,7 @@
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+"""
+
 import yaml
 
 from vehicledet.data.splits import write_split_file

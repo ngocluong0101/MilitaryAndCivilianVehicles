@@ -1,4 +1,8 @@
-"""Chia train/val/test: stratify theo lớp chính của ảnh, nhóm gần trùng nằm chung một tập."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Chia train/val/test: stratify theo lớp chính của ảnh, nhóm gần trùng nằm chung một tập.
+"""
 
 from __future__ import annotations
 
@@ -16,8 +20,7 @@ BACKGROUND = -1  # "lớp" của ảnh không có bbox
 
 
 def main_class(boxes: list[Box]) -> int:
-    """Lớp chính của ảnh: lớp có nhiều bbox nhất; hoà thì lớp có tổng diện tích lớn hơn,
-    vẫn hoà thì lớp có id nhỏ hơn. Ảnh không có bbox -> BACKGROUND."""
+    """Lớp có nhiều bbox nhất (hoà: diện tích lớn hơn, rồi id nhỏ hơn); không bbox -> BACKGROUND."""
     if not boxes:
         return BACKGROUND
     count: Counter[int] = Counter(b.cls for b in boxes)
@@ -44,11 +47,10 @@ def assign_splits(
     ratios: tuple[float, float, float],
     seed: int,
 ) -> dict[str, str]:
-    """Gán mỗi nhóm cho một tập sao cho phân bố từng stratum gần với tỉ lệ mục tiêu.
+    """Gán mỗi nhóm gần trùng vào một tập sao cho phân bố từng stratum sát tỉ lệ mục tiêu.
 
-    `strata`: {ảnh -> stratum (lớp chính hoặc BACKGROUND)}; `groups`: các nhóm gần trùng (chỉ
-    gồm ảnh có trong `strata`). Ảnh không thuộc nhóm nào là nhóm 1 ảnh. Tham lam: nhóm lớn xử
-    lý trước, mỗi nhóm vào tập đang "thiếu" nhiều nhất ở các stratum mà nhóm chứa.
+    `strata`: {ảnh -> lớp chính hoặc BACKGROUND}; ảnh không thuộc nhóm nào là nhóm 1 ảnh.
+    Tham lam: nhóm lớn trước, vào tập đang "thiếu" nhiều nhất.
     """
     if abs(sum(ratios) - 1) > 1e-6:
         raise ValueError(f"Tổng tỉ lệ phải bằng 1, nhận được {ratios}")

@@ -1,10 +1,10 @@
-"""Phát hiện ảnh trùng / gần trùng bằng perceptual hash (pHash) và gom nhóm.
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
 
-- Hai ảnh là "gần trùng" nếu pHash 16x16 (256 bit) cách nhau <= THRESHOLD, HOẶC pHash 8x8
-  (64 bit) cách nhau <= COARSE_THRESHOLD (bắt thêm ảnh bị zoom/crop). Nhóm là bao đóng bắc
-  cầu (union-find).
-- dHash 8x8 là hash độc lập, chỉ dùng để kiểm tra chéo kết quả chia tập.
-- md5 của file để đếm ảnh trùng byte-by-byte.
+Phát hiện ảnh trùng / gần trùng bằng perceptual hash (pHash) và gom nhóm.
+
+Gần trùng: pHash 16x16 cách nhau <= THRESHOLD, hoặc pHash 8x8 cách nhau <= COARSE_THRESHOLD;
+nhóm = bao đóng bắc cầu (union-find). dHash 8x8 chỉ để kiểm tra chéo, md5 để đếm ảnh trùng byte.
 """
 
 from __future__ import annotations
@@ -41,10 +41,7 @@ def _hash_int(im: Image.Image, kind: str, hash_size: int) -> int:
 def compute_hashes(
     image_dir: Path, names: list[str], cache_path: Path | None = None
 ) -> dict[str, dict]:
-    """Trả về {tên ảnh: {md5, phash, phash8, dhash8}}; ảnh không đọc được bị bỏ qua (ghi log).
-
-    Kết quả được cache theo (tên, kích thước file) để chạy lại nhanh.
-    """
+    """Trả về {tên ảnh: {md5, phash, phash8, dhash8}} (cache theo tên + kích thước; bỏ ảnh lỗi)."""
     cache: dict = {}
     if cache_path and cache_path.is_file():
         loaded = json.loads(cache_path.read_text())
@@ -171,11 +168,10 @@ def find_duplicate_groups(hashes: dict[str, dict], threshold: int = THRESHOLD) -
 
 
 def cross_split_leakage(groups: list[list[str]], split_of: dict[str, str]) -> dict:
-    """Đếm trùng lặp trong và giữa các tập dựa trên nhóm gần trùng.
+    """Đếm ảnh có bản gần trùng ở tập khác và trong chính tập của nó.
 
-    - `images_with_dup_in[a][b]`: số ảnh thuộc tập a có >= 1 ảnh gần trùng trong tập b (a != b).
-    - `images_with_dup_in_same_split[a]`: số ảnh tập a có >= 1 ảnh gần trùng khác trong chính tập a.
-    Ảnh không có trong `split_of` (không thuộc cách chia) bị bỏ qua.
+    - `images_with_dup_in[a][b]`: số ảnh tập a có >= 1 ảnh gần trùng trong tập b (a != b).
+    - `images_with_dup_in_same_split[a]`: số ảnh tập a có >= 1 ảnh gần trùng khác trong tập a.
     """
     spanning = 0
     leaked: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))

@@ -1,3 +1,7 @@
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+"""
+
 from vehicledet.data.labels import Box, compare_boxes, parse_yolo_txt, read_csv_boxes
 
 CLASSES = {"military truck": 0, "civilian car": 1, "military tank": 2}

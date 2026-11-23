@@ -1,3 +1,7 @@
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+"""
+
 import pytest
 
 from vehicledet.paths import class_names, resolve_data_root

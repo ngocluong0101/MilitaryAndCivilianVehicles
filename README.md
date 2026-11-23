@@ -189,3 +189,9 @@ giới hạn, sử dụng có trách nhiệm) · [docs/TENSORRT_SETUP.md](docs/T
 - Dataset: **CC BY 4.0** (Gupta, Pareek, Singal, Rao; DRDO Institute for System Studies and Analyses). Ảnh gốc
   có thể có bản quyền riêng; không phân phối lại ảnh.
 - Chưa chọn license cho mã nguồn riêng của repo này.
+
+---
+
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+"""

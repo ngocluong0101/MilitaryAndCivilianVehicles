@@ -1,6 +1,7 @@
-"""Demo Gradio: tải ảnh lên → ảnh có bbox + bảng kết quả + thời gian suy luận.
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
 
-Dùng lõi inference `vehicledet.serve.inference` (chỉ cần onnxruntime, không cần torch).
+Demo Gradio: tải ảnh lên → ảnh có bbox + bảng kết quả + thời gian suy luận.
 """
 
 from __future__ import annotations

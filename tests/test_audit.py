@@ -1,3 +1,7 @@
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+"""
+
 import pytest
 from PIL import Image
 
@@ -11,8 +15,8 @@ CSV_HEADER = "filename,width,height,class,xmin,ymin,xmax,ymax\n"
 def real_dataset(tmp_path):
     """Dataset giả có ảnh thật 100x100.
 
-    a: 1 tank, khớp CSV | b: 2 lớp, CSV lệch số bbox | c: không bbox (nền), ngoài CSV
-    d: nhãn lỗi (class 9) | e: ảnh hỏng | f: không có file TXT | g: chỉ có trong CSV
+    a khớp CSV | b lệch số bbox | c nền, ngoài CSV | d nhãn lỗi | e ảnh hỏng | f thiếu TXT
+    | g chỉ trong CSV
     """
     root = tmp_path / "ds"
     images, txt, csvd = (

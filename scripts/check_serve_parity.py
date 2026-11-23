@@ -1,8 +1,9 @@
-"""So khớp pipeline ONNX tự viết (demo) với Ultralytics trên cùng ảnh val.
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+So khớp pipeline ONNX tự viết (demo) với Ultralytics trên ảnh val; ghi reports/serve_parity.json.
 
 Dùng: python scripts/check_serve_parity.py --model exports/<tag>/best.onnx [--split v2] [--n 100]
-Chỉ dùng ảnh VAL. Ghi reports/serve_parity.json: tỉ lệ bbox khớp (IoU > 0.9) theo khoảng điểm.
-Lưu ý: tiền xử lý khác nhau chút (Pillow vs OpenCV resize) nên phát hiện điểm thấp có thể lệch.
 """
 
 import argparse
@@ -26,7 +27,9 @@ def iou(a, b) -> float:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(
+        description="So khớp pipeline ONNX tự viết (demo) với Ultralytics trên ảnh val."
+    )
     ap.add_argument("--model", required=True)
     ap.add_argument("--split", default="v2")
     ap.add_argument("--n", type=int, default=100)

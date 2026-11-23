@@ -1,4 +1,8 @@
-"""Đọc & kiểm tra nhãn YOLO (.txt) và CSV của dataset."""
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
+
+Đọc & kiểm tra nhãn YOLO (.txt) và CSV của dataset.
+"""
 
 from __future__ import annotations
 
@@ -38,11 +42,7 @@ class LabelProblem:
 def parse_yolo_txt(
     path: Path, num_classes: int, image_size: tuple[int, int] | None = None
 ) -> tuple[list[Box], list[LabelProblem]]:
-    """Đọc một file nhãn YOLO. Trả về (box hợp lệ, danh sách vấn đề).
-
-    Box có lỗi mức 'error' không nằm trong danh sách box trả về. `image_size` = (w, h) pixel,
-    dùng để phát hiện bbox quá nhỏ.
-    """
+    """Đọc một file nhãn YOLO: trả về (box hợp lệ, danh sách vấn đề); box lỗi bị loại."""
     boxes: list[Box] = []
     problems: list[LabelProblem] = []
     name = path.name
@@ -92,11 +92,7 @@ def parse_yolo_txt(
 
 
 def read_csv_boxes(csv_paths: list[Path], class_to_id: dict[str, int]):
-    """Đọc các CSV (loại dòng trùng giữa các file). Trả về (boxes theo filename, vấn đề).
-
-    Box được chuẩn hoá về dạng YOLO theo width/height ghi trong CSV. Trả thêm kích thước ảnh
-    khai báo trong CSV để so với ảnh thật.
-    """
+    """Đọc các CSV (bỏ dòng lặp): trả về (box YOLO theo filename, kích thước khai báo, lớp lạ)."""
     rows: set[tuple] = set()
     for p in csv_paths:
         with open(p, newline="", encoding="utf-8") as f:
@@ -148,15 +144,10 @@ def iou(a: Box, b: Box) -> float:
 def compare_boxes(
     csv_boxes: list[Box], txt_boxes: list[Box], iou_good: float = 0.9, iou_min: float = 0.5
 ) -> str:
-    """So khớp nhãn CSV với TXT của cùng một ảnh.
+    """So khớp nhãn CSV với TXT của một ảnh (ghép tham lam theo IoU cao nhất).
 
-    Trả về một trong:
-    - 'count_mismatch': khác số bbox;
-    - 'box_mismatch': có bbox không ghép được (IoU < iou_min);
-    - 'class_mismatch': vị trí khớp nhưng khác lớp;
-    - 'minor_box_diff': khớp lớp nhưng có bbox lệch nhẹ (iou_min <= IoU < iou_good);
-    - 'match': mọi bbox khớp (IoU >= iou_good, cùng lớp).
-    Ghép tham lam theo IoU cao nhất.
+    Trả về 'count_mismatch', 'box_mismatch' (có bbox IoU < iou_min), 'class_mismatch',
+    'minor_box_diff' (iou_min <= IoU < iou_good) hoặc 'match'.
     """
     if len(csv_boxes) != len(txt_boxes):
         return "count_mismatch"

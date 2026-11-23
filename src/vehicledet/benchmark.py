@@ -1,11 +1,10 @@
-"""Benchmark tốc độ và độ chính xác: PyTorch FP32/FP16, ONNX Runtime, TensorRT FP16/INT8.
+"""
+@author: Ngoc Luong <ngocluongg0101@gmail.com>
 
-Đo qua cùng một đường Ultralytics `predict` cho mọi định dạng nên tiền/hậu xử lý giống nhau:
-- `latency` (model-only) = `speed['inference']` của Ultralytics, ms cho một ảnh, batch 1;
-- `e2e` = thời gian cả lời gọi predict (tiền xử lý + model + NMS), batch 1;
-- `throughput` = ảnh/giây của cả lời gọi predict (end-to-end) với batch 1/4/8/16.
-Định dạng không chạy được trên máy (thiếu TensorRT, onnxruntime-gpu, GPU...) được ghi là "chưa đo"
-kèm lý do, không bao giờ ước đoán số.
+Benchmark tốc độ và độ chính xác: PyTorch FP32/FP16, ONNX Runtime, TensorRT FP16/INT8.
+
+Mọi định dạng đo qua cùng đường Ultralytics `predict`: `latency` (model-only, batch 1), `e2e` (cả
+predict, batch 1), `throughput` (ảnh/giây, batch 1/4/8/16). Định dạng không chạy được ghi "chưa đo".
 """
 
 from __future__ import annotations
@@ -104,8 +103,7 @@ def throughput(batch: int, wall_ms: list[float]) -> float:
 
 
 def parse_gpu_memory(text: str, pid: int) -> float | None:
-    """Phân tích đầu ra của nvidia-smi (`--query-compute-apps=pid,used_memory` dạng csv, không
-    header, không đơn vị); trả về MiB của tiến trình `pid` (None nếu không thấy)."""
+    """MiB của tiến trình `pid` trong đầu ra csv của nvidia-smi (None nếu không thấy)."""
     for line in text.strip().splitlines():
         parts = [p.strip() for p in line.split(",")]
         if len(parts) == 2 and parts[0] == str(pid):
@@ -117,10 +115,7 @@ def parse_gpu_memory(text: str, pid: int) -> float | None:
 
 
 def process_gpu_memory_mb(pid: int | None = None) -> float | None:
-    """VRAM của riêng tiến trình này (gồm cả CUDA context), đo bằng nvidia-smi.
-
-    Không dùng `torch.cuda.memory_allocated` vì không thấy bộ nhớ của ONNX Runtime/TensorRT.
-    """
+    """VRAM của riêng tiến trình này (gồm CUDA context), đo bằng nvidia-smi."""
     try:
         out = subprocess.run(
             ["nvidia-smi", "--query-compute-apps=pid,used_memory", "--format=csv,noheader,nounits"],
@@ -135,11 +130,7 @@ def process_gpu_memory_mb(pid: int | None = None) -> float | None:
 
 
 def _ort_session_providers(path: Path) -> list[str]:
-    """Provider mà một session ONNX Runtime THỰC SỰ dùng (không chỉ provider được biên dịch sẵn).
-
-    ONNX Runtime lặng lẽ rơi về CPU nếu không nạp được thư viện CUDA, nên phải tạo session thật để
-    kiểm tra; `preload_dlls()` nạp CUDA/cuDNN cài bằng pip (gói nvidia-*) trước khi tạo session.
-    """
+    """Provider mà session ONNX Runtime thực sự dùng (nó lặng lẽ rơi về CPU nếu thiếu CUDA)."""
     import onnxruntime as ort
 
     if hasattr(ort, "preload_dlls"):
@@ -151,9 +142,7 @@ def _ort_session_providers(path: Path) -> list[str]:
 
 
 class ClockSampler:
-    """Lấy mẫu xung nhịp SM của GPU (NVML) khi đo; GPU laptop đổi xung theo tải/nhiệt/công suất.
-
-    Không có NVML/GPU thì không ghi gì (stats() trả về None)."""
+    """Lấy mẫu xung nhịp SM của GPU (NVML) khi đo; không có NVML/GPU thì stats() trả về None."""
 
     def __init__(self, interval: float = 0.1):
         self.interval, self.samples = interval, []
@@ -203,10 +192,9 @@ _MEDIAN_FIELDS = (
 
 
 def aggregate_rows(rows: list[dict]) -> dict:
-    """Gộp nhiều lần đo (vòng lặp) của cùng một định dạng: trung vị + khoảng min–max.
+    """Gộp các lần đo của một định dạng: trung vị + khoảng min–max.
 
-    Lần đo không thành công bị bỏ qua; nếu không lần nào thành công thì trả về dòng đầu tiên.
-    mAP và map_part lấy từ lần đo đầu tiên có giá trị.
+    Bỏ lần đo lỗi; mAP và map_part lấy từ lần đầu có giá trị.
     """
     ok = [r for r in rows if r["status"] == "đã đo"]
     if not ok:
@@ -315,11 +303,7 @@ def letterbox_square(img: np.ndarray, size: int) -> np.ndarray:
 
 
 def load_sample_images(data_root: Path, split: str, n: int = 16, imgsz: int = 640):
-    """n ảnh BGR đầu tiên của tập VAL, đã letterbox về đúng imgsz×imgsz (chỉ để đo thời gian).
-
-    Dùng một kích thước cố định để model đầu vào động (ONNX/TensorRT) không phải tối ưu lại theo
-    từng hình dạng ảnh, nhờ vậy mọi định dạng được đo trên cùng input 1×3×imgsz×imgsz.
-    """
+    """n ảnh BGR đầu tiên của tập VAL, letterbox về imgsz×imgsz (chỉ để đo thời gian)."""
     import cv2
 
     root = build_yolo_dataset(data_root, split).data_yaml.parent / "images" / "val"
@@ -528,12 +512,10 @@ def run_benchmark(
     row_out: Path | None = None,
     repeats: int = 3,
 ) -> list[dict]:
-    """Chạy benchmark mọi định dạng trong model_dir; ghi reports/benchmark.csv + benchmark.json.
+    """Benchmark mọi định dạng trong model_dir; ghi reports/benchmark.csv + benchmark.json.
 
-    isolate=True (mặc định): mỗi lần đo của mỗi định dạng chạy trong một tiến trình riêng, nên VRAM
-    là của riêng định dạng đó. Đo lặp `repeats` vòng xen kẽ các định dạng (round-robin) để trôi xung
-    nhịp GPU không dồn vào một định dạng; báo cáo trung vị và khoảng min–max. mAP chỉ đo ở vòng đầu.
-    `row_out` (nội bộ, cho tiến trình con): chỉ ghi dòng kết quả ra file.
+    isolate=True: mỗi lần đo chạy trong một tiến trình riêng (VRAM riêng). Đo `repeats` vòng xen kẽ
+    các định dạng, báo trung vị và min–max; mAP chỉ đo ở vòng đầu. `row_out`: cho tiến trình con.
     """
     if map_part == "test" and not final:
         raise PermissionError(
