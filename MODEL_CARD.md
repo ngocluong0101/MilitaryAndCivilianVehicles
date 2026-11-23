@@ -1,7 +1,7 @@
 # Model card – Military & Civilian Vehicle Detection
 
 > **Trạng thái:** model đã train và đánh giá trên tập test **một lần** (số liệu bên dưới lấy từ
-> `reports/test_results.json`) và benchmark (`reports/benchmark.csv`). Không có con số nào trong file này
+> `reports/test_results.json`). Không có con số nào trong file này
 > được ước đoán.
 
 ## Tổng quan
@@ -17,7 +17,7 @@
 
 ## Mục đích sử dụng
 
-- **Dự kiến:** học tập, nghiên cứu, minh hoạ quy trình phát triển model computer vision; demo trên ảnh
+- **Dự kiến:** học tập, nghiên cứu, minh hoạ quy trình phát triển model computer vision; ví dụ trên ảnh
   công khai.
 - **Ngoài phạm vi / không khuyến nghị:** giám sát, nhận dạng mục tiêu, hỗ trợ quyết định quân sự hay
   an ninh trong thực tế; xử lý ảnh vệ tinh, UAV, hồng ngoại, ban đêm; bất kỳ ứng dụng nào mà nhầm giữa
@@ -90,25 +90,6 @@ Nguồn `reports/error_analysis/error_analysis.md`: 830 đúng, 76 nhầm lớp,
   `reports/error_analysis/remedy_comparison.md`.
 - **Bỏ sót:** 122 GT, trong đó nhóm "ảnh nhiều vật thể" 49, "nhỏ" 31, "bị che" 28 (thẻ có thể chồng nhau).
 
-## Hiệu năng suy luận (RTX 4060 Laptop 8 GB, input 640×640)
-
-Nguồn `reports/benchmark.csv` (trung vị 3 vòng, mỗi lần đo một tiến trình riêng); chi tiết và độ dao động:
-`reports/benchmark_runs/README.md`.
-
-| Định dạng | Precision | Latency p50 batch 1 (ms) | Throughput batch 16 (img/s) | VRAM (MB) | mAP50-95 (test) | Kích thước file |
-|---|---|---|---|---|---|---|
-| PyTorch | FP32 | 4,82 [4,77–6,56] | 309 [178–309] | 672 | 0,5323 | 5,2 MB |
-| PyTorch | FP16 | 5,00 [4,93–5,41] | 471 [255–478] | 532 | 0,5319 | 5,2 MB |
-| ONNX Runtime (GPU) | FP32 | 3,68 [3,68–8,42] | 159 [113–159] | 1308 | 0,5323 | 10,8 MB |
-| TensorRT | FP16 | **1,11** [1,10–1,21] | 651 [633–658] | 1196 | 0,5321 | 7,6 MB |
-| TensorRT | INT8 | 1,14 [1,14–1,14] | **767** [766–767] | **1056** | **0,5228** | **4,5 MB** |
-
-- TensorRT FP16 ≈ 4,3× nhanh hơn PyTorch FP32 ở batch 1 với mAP gần như không đổi; INT8 chỉ tăng thêm ~18%
-  throughput ở batch 16 và **mất 0,0095 mAP50-95** (hiệu chuẩn bằng 500 ảnh train; 26 lớp đầu mạng được giữ
-  ngoài INT8). Khuyến nghị cho model này: **TensorRT FP16**.
-- Số đo phụ thuộc xung nhịp GPU laptop (780 MHz khi bị hãm so với ~2500 MHz khi xung cao làm latency
-  TensorRT thay đổi ~3 lần); các khoảng [min–max] phản ánh điều đó.
-
 ## Giới hạn đã biết
 
 - **Ảnh web, ít đa dạng:** nhiều ảnh có watermark kho ảnh stock, minh hoạ/icon/render nhìn từ trên xuống;
@@ -123,9 +104,6 @@ Nguồn `reports/benchmark.csv` (trung vị 3 vòng, mỗi lần đo một tiế
   giá độc lập về độ chính xác của nhãn.
 - **Độ không chắc chắn của kết quả:** một seed, val/test chỉ ~680 ảnh; chưa đo khoảng tin cậy; model chưa
   hội tụ hoàn toàn (xem `reports/experiments/*/results.csv`).
-- **Tiền xử lý của demo khác Ultralytics một chút** (Pillow vs OpenCV resize): bbox điểm ≥ 0,6 khớp IoU > 0,9 ở 96%
-  (`reports/serve_parity.json`), điểm thấp lệch nhiều hơn; ảnh hưởng tới mAP chưa đo
-  với model thật.
 
 ## Sử dụng có trách nhiệm
 

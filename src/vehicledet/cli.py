@@ -91,57 +91,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sp.add_argument("--allow-rerun", action="store_true", help="Cho phép ghi đè test_results.json")
 
-    sp = sub.add_parser(
-        "export", help="Export best.pt -> ONNX, TensorRT FP16/INT8 trong exports/<tag>/"
-    )
-    add_data_root(sp)
-    sp.add_argument("--weights", required=True)
-    sp.add_argument("--tag", required=True, help="Tên thư mục trong exports/ (vd: exp3b)")
-    sp.add_argument("--split", default="v2", help="Split lấy ảnh TRAIN để hiệu chuẩn INT8")
-    sp.add_argument(
-        "--formats",
-        nargs="+",
-        default=["onnx", "engine-fp16", "engine-int8"],
-        choices=["onnx", "engine-fp16", "engine-int8"],
-    )
-    sp.add_argument("--imgsz", type=int, default=640)
-    sp.add_argument("--device", default="0")
-
-    sp = sub.add_parser(
-        "benchmark", help="Benchmark tốc độ/VRAM/mAP các định dạng -> reports/benchmark.csv"
-    )
-    add_data_root(sp)
-    sp.add_argument("--model-dir", required=True, help="Thư mục exports/<tag>")
-    sp.add_argument("--split", default="v2")
-    sp.add_argument("--device", default="0", help="'0' (GPU) hoặc 'cpu'")
-    sp.add_argument("--imgsz", type=int, default=640)
-    sp.add_argument("--warmup", type=int, default=20)
-    sp.add_argument("--iters", type=int, default=200)
-    sp.add_argument(
-        "--map-part",
-        choices=["val", "test", "none"],
-        default="val",
-        help="Tập đo mAP; 'test' cần --final",
-    )
-    sp.add_argument("--final", action="store_true", help="Xác nhận dùng tập test cho báo cáo cuối")
-    sp.add_argument("--only", nargs="+", help="Chỉ đo các định dạng này (vd: onnx_fp32)")
-    sp.add_argument("--map-batch", type=int, default=8, help="Batch khi đo mAP")
-    sp.add_argument(
-        "--repeats",
-        type=int,
-        default=3,
-        help="Số vòng đo lặp (xen kẽ các định dạng); báo cáo trung vị và khoảng min–max",
-    )
-    sp.add_argument(
-        "--no-isolate",
-        action="store_true",
-        help="Đo mọi định dạng trong một tiến trình (VRAM sẽ lẫn giữa các định dạng)",
-    )
-    sp.add_argument(
-        "--row-out", help=argparse.SUPPRESS
-    )  # nội bộ: tiến trình con ghi một dòng kết quả
-    sp.add_argument("--roadmap", help="Cập nhật bảng benchmark trong file này (ROADMAP.md)")
-
     sp = sub.add_parser("analyze-errors", help="Phân tích lỗi trên VAL -> reports/error_analysis/")
     add_data_root(sp)
     sp.add_argument("--weights", required=True)
@@ -150,16 +99,6 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--imgsz", type=int, default=640)
     sp.add_argument("--device", default=None)
     sp.add_argument("--out", default=None, help="Thư mục xuất (mặc định reports/error_analysis)")
-
-    def add_model_args(sp: argparse.ArgumentParser) -> None:
-        sp.add_argument("--model", required=True, help="File .onnx hoặc .engine")
-        sp.add_argument("--backend", choices=["auto", "onnx", "tensorrt"], default="auto")
-        sp.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
-        sp.add_argument("--host", default="127.0.0.1")
-
-    sp = sub.add_parser("demo", help="Chạy demo Gradio")
-    add_model_args(sp)
-    sp.add_argument("--port", type=int, default=7860)
     return p
 
 
@@ -248,58 +187,6 @@ def main(argv: list[str] | None = None) -> int:
                 args.allow_rerun,
             )
         )
-    elif args.command == "export":
-        from vehicledet.export import export_formats
-
-        info = export_formats(
-            args.weights,
-            args.tag,
-            args.split,
-            tuple(args.formats),
-            args.imgsz,
-            data_root=args.data_root,
-            device=args.device,
-        )
-        print(json.dumps(info["results"], ensure_ascii=False, indent=1))
-    elif args.command == "benchmark":
-        from vehicledet.benchmark import (
-            BENCH_MARK_END,
-            BENCH_MARK_START,
-            render_benchmark_table,
-            run_benchmark,
-        )
-        from vehicledet.experiments import replace_marked_block
-
-        rows = run_benchmark(
-            args.model_dir,
-            args.split,
-            args.device,
-            args.imgsz,
-            args.warmup,
-            args.iters,
-            None if args.map_part == "none" else args.map_part,
-            args.final,
-            map_batch=args.map_batch,
-            only=args.only,
-            data_root=args.data_root,
-            isolate=not args.no_isolate,
-            row_out=Path(args.row_out) if args.row_out else None,
-            repeats=args.repeats,
-        )
-        if args.row_out:
-            return 0
-        table = render_benchmark_table(rows)
-        print(table)
-        if args.roadmap and not Path(args.roadmap).is_file():
-            print(f"Bỏ qua cập nhật: không có file {args.roadmap} (file này giữ cục bộ, ngoài git)")
-        elif args.roadmap:
-            path = Path(args.roadmap)
-            path.write_text(
-                replace_marked_block(
-                    path.read_text(encoding="utf-8"), table, BENCH_MARK_START, BENCH_MARK_END
-                ),
-                encoding="utf-8",
-            )
     elif args.command == "analyze-errors":
         from vehicledet.error_analysis import run_error_analysis
 
@@ -308,8 +195,4 @@ def main(argv: list[str] | None = None) -> int:
             args.weights, args.split, args.conf, args.imgsz, args.device, args.data_root, **kwargs
         )
         print(json.dumps(summary["counts"], ensure_ascii=False, indent=1))
-    elif args.command == "demo":
-        from vehicledet.serve.demo import launch
-
-        launch(args.model, args.backend, args.device, args.host, args.port)
     return 0

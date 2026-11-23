@@ -17,7 +17,6 @@ SPLITS_DIR = REPO_ROOT / "splits"
 REPORTS_DIR = REPO_ROOT / "reports"
 WEIGHTS_DIR = REPO_ROOT / "weights"
 EXPERIMENTS_DIR = REPORTS_DIR / "experiments"
-EXPORTS_DIR = REPO_ROOT / "exports"
 MLFLOW_DB = REPO_ROOT / "mlflow.db"
 MLRUNS_DIR = REPO_ROOT / "mlruns"
 

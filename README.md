@@ -8,7 +8,7 @@ cho biết đó là loại nào trong 6 loại — `military truck` (xe tải qu
 `military helicopter` (trực thăng quân sự). Xây dựng trên [Ultralytics YOLO](https://github.com/ultralytics/ultralytics).
 
 Project đi qua đủ vòng đời của một model thị giác máy tính: **kiểm tra dữ liệu → chia tập đúng cách →
-huấn luyện có đối chứng → phân tích lỗi → tối ưu tốc độ → chạy thử bằng demo web**.
+huấn luyện có đối chứng → đánh giá → phân tích lỗi**.
 
 ```mermaid
 flowchart LR
@@ -17,9 +17,6 @@ flowchart LR
     C --> D[make-split<br/>chia train/val/test]
     D --> E[train<br/>YOLO + MLflow]
     E --> F[evaluate &<br/>analyze-errors]
-    F --> G[export<br/>ONNX, TensorRT]
-    G --> H[benchmark]
-    G --> I[demo<br/>giao diện web Gradio]
 ```
 
 ## Điểm nổi bật
@@ -28,8 +25,7 @@ flowchart LR
 |---|---|---|---|
 | **Dữ liệu** | Ảnh giống nhau nằm ở cả tập huấn luyện và tập kiểm tra khiến điểm số cao ảo | Dò ảnh trùng bằng perceptual hash, chia lại dữ liệu theo từng nhóm ảnh trùng | **71,7%** ảnh có bản trùng; **64,9%** ảnh kiểm tra của cách chia gốc có bản sao trong tập huấn luyện; sau khi chia lại: 0 nhóm bị tách |
 | **Đánh giá** | Chọn model trên tập test làm số cuối bị lạc quan | Khoá tập test trong code (chỉ chạy một lần); mỗi thí nghiệm chỉ đổi một yếu tố, lưu bằng MLflow | mAP50-95 **0,531** trên 679 ảnh test độc lập |
-| **Tốc độ** | Model chính xác nhưng quá chậm để dùng | Export ONNX/TensorRT, đo độ trễ, thông lượng, VRAM và độ chính xác của từng định dạng | TensorRT FP16 nhanh **≈ 4 lần** PyTorch FP32 (4,82 → 1,11 ms/ảnh), độ chính xác gần như không đổi |
-| **Sử dụng** | Model chỉ nằm trong notebook | Demo web Gradio chạy bằng ONNX Runtime (chạy được cả trên CPU, không cần PyTorch), kiểm thử tự động chạy trên CI | **109** bài kiểm thử; một lệnh để mở demo |
+| **Kiểm thử** | Mã khó tái lập, dễ hỏng âm thầm | Kiểm thử tự động chạy trên CPU với dữ liệu giả, CI chạy mỗi lần push | Xem mục [Kiểm thử](#kiểm-thử) |
 | **Trung thực** | Chỉ công bố kết quả đẹp | Ghi lại cả thí nghiệm không cải thiện và các lỗi đo đạc đã sửa | Toàn bộ trong [reports/](reports/) |
 
 ## Kết quả
@@ -62,18 +58,6 @@ flowchart LR
 
 Nguồn: `reports/experiments_summary.md` và `reports/experiments/`.
 
-### Tốc độ trên RTX 4060 Laptop (model đã chọn, ảnh 640×640)
-
-| Định dạng | Thời gian xử lý 1 ảnh (ms) | Số ảnh/giây (batch 16) | VRAM (MB) | mAP50-95 (test) |
-|---|---|---|---|---|
-| PyTorch FP32 | 4,82 | 309 | 672 | 0,5323 |
-| PyTorch FP16 | 5,00 | 471 | 532 | 0,5319 |
-| ONNX Runtime (GPU) | 3,68 | 159 | 1308 | 0,5323 |
-| **TensorRT FP16** | **1,11** | 651 | 1196 | 0,5321 |
-| TensorRT INT8 | 1,14 | **767** | 1056 | 0,5228 |
-
-Nguồn: `reports/benchmark.csv`; chi tiết các lần đo ở `reports/benchmark_runs/README.md`.
-
 ### Phân tích lỗi
 
 Lỗi model hay gặp nhất là nhầm máy bay dân dụng thành máy bay quân sự (28 trên tổng 76 ca nhầm lớp), nhiều ca
@@ -82,8 +66,7 @@ chưa gán nhãn. Báo cáo kèm ảnh minh hoạ: [reports/error_analysis/error
 
 ## Bắt đầu nhanh
 
-**Yêu cầu:** Python ≥ 3.10; GPU NVIDIA để huấn luyện (đã chạy trên RTX 4060 Laptop 8 GB). Demo chạy
-được cả trên CPU.
+**Yêu cầu:** Python ≥ 3.10; GPU NVIDIA để huấn luyện (đã chạy trên RTX 4060 Laptop 8 GB).
 
 ### 1. Cài đặt
 
@@ -123,46 +106,21 @@ Tập test chỉ dùng được một lần, sau khi đã chọn xong model:
 python -m vehicledet evaluate --weights <đường dẫn best.pt> --split v2 --part test --final
 ```
 
-### 4. Xuất model và đo tốc độ
-
-```bash
-# Xuất ONNX (chạy được trên CPU)
-python -m vehicledet export --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt \
-    --tag exp3c --formats onnx --device cpu
-
-# Xuất thêm TensorRT FP16/INT8 và đo tốc độ (cần GPU NVIDIA + TensorRT, xem docs/TENSORRT_SETUP.md)
-python -m vehicledet export --weights runs/detect/exp3c_yolo11n_v2_640_30ep/weights/best.pt --tag exp3c
-python -m vehicledet benchmark --model-dir exports/exp3c
-```
-
-### 5. Chạy demo
-
-Model đã huấn luyện không đi kèm repo (file nặng và ràng buộc license), nên cần làm các bước trên để có
-`exports/exp3c/best.onnx`.
-
-```bash
-python -m vehicledet demo --model exports/exp3c/best.onnx      # giao diện web tại http://127.0.0.1:7860
-```
-
-Tải một ảnh lên, kéo thanh ngưỡng tin cậy; demo trả về ảnh đã khoanh vùng, bảng các phương tiện phát hiện
-(lớp, điểm, toạ độ) và thời gian xử lý. Thêm `--device cpu` để ép chạy bằng CPU; demo không cần PyTorch.
-
 ## Cấu trúc thư mục
 
 ```
 configs/        cấu hình từng thí nghiệm (YAML) và tên 6 lớp
-src/vehicledet/ mã nguồn: data/ (kiểm tra, chia tập), train, evaluate, export, benchmark, serve/ (lõi nhận diện và demo)
+src/vehicledet/ mã nguồn: data/ (kiểm tra, chia tập), train, evaluate, error_analysis
 splits/         danh sách ảnh của từng tập train/val/test
 scripts/        cài môi trường, chạy hàng loạt thí nghiệm, tổng hợp kết quả
-tests/          109 bài kiểm thử (dùng dữ liệu giả, không cần GPU hay dataset)
+tests/          79 bài kiểm thử (dùng dữ liệu giả, không cần GPU hay dataset)
 reports/        toàn bộ kết quả đo (json, csv, ảnh): nguồn của mọi con số trong tài liệu này
-docs/           hướng dẫn cài TensorRT, đưa demo lên Hugging Face Spaces
 ```
 
 ## Kiểm thử
 
 ```bash
-python -m pytest                      # 109 bài kiểm thử, chạy trên CPU, không cần dataset
+python -m pytest                      # 79 bài kiểm thử, chạy trên CPU, không cần dataset
 ruff check . && ruff format --check .
 ```
 
@@ -171,12 +129,12 @@ GitHub Actions (`.github/workflows/ci.yml`) tự chạy `ruff` và `pytest` mỗ
 ## Tài liệu
 
 [DATASET.md](DATASET.md) (mô tả dữ liệu, các vấn đề đã phát hiện) · [MODEL_CARD.md](MODEL_CARD.md) (mục đích,
-giới hạn, sử dụng có trách nhiệm) · [docs/TENSORRT_SETUP.md](docs/TENSORRT_SETUP.md)
+giới hạn, sử dụng có trách nhiệm)
 
 ## Giới hạn và sử dụng có trách nhiệm
 
 - Kết quả đến từ một lần huấn luyện (một seed) và các tập kiểm định/test chỉ khoảng 680 ảnh, chưa có khoảng
-  tin cậy; số liệu tốc độ phụ thuộc xung nhịp của GPU laptop (có thể dao động vài lần giữa các lần đo).
+  tin cậy.
 - Dữ liệu là ảnh thu thập từ web, ít vật thể nhỏ, chưa kiểm tra với ảnh vệ tinh, UAV hay ban đêm; phân loại
   "quân sự/dân sự" theo hình dạng có thể sai.
 - Project chỉ phục vụ học tập và nghiên cứu về thị giác máy tính trên ảnh công khai. Không dùng để ra quyết

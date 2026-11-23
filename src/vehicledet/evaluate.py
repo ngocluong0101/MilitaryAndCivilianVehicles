@@ -57,7 +57,7 @@ def metrics_to_dict(m, names: list[str]) -> dict:
         "per_class": per_class,
         "classes_absent_in_split": [n for i, n in enumerate(names) if i not in present],
         "speed_ms_per_image": {k: round(float(v), 3) for k, v in dict(m.speed).items()},
-        "speed_note": "đo trong lúc val (batch, gồm tiền/hậu xử lý); benchmark chuẩn ở bước export",
+        "speed_note": "đo trong lúc val (batch, gồm tiền/hậu xử lý)",
     }
     cm = getattr(m, "confusion_matrix", None)
     if cm is not None:
