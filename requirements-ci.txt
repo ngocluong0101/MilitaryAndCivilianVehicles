@@ -1,7 +1,0 @@
-# Phụ thuộc cho CI (CPU, không torch/ultralytics, không dataset): đủ để chạy ruff + pytest.
-PyYAML==6.0.4
-numpy==2.5.5
-Pillow==13.0.0
-ImageHash==4.3.2
-pytest==9.2.0
-ruff==0.17.6
