@@ -192,6 +192,4 @@ giới hạn, sử dụng có trách nhiệm) · [docs/TENSORRT_SETUP.md](docs/T
 
 ---
 
-"""
 @author: Ngoc Luong <ngocluongg0101@gmail.com>
-"""
